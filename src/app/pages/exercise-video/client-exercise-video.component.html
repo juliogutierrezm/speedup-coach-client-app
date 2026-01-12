@@ -1,0 +1,48 @@
+<div class="exercise-video-page">
+  <header class="video-header">
+    <button class="nav-back" type="button" (click)="goBack()" aria-label="Volver al ejercicio" [disabled]="isLoading">
+      ←
+    </button>
+    <div class="video-header-text">
+      <p class="video-eyebrow">{{ exerciseTitle }}</p>
+      <h1 class="video-title">{{ planTitle }} / {{ sessionTitle }}</h1>
+    </div>
+  </header>
+
+  <div class="video-error" *ngIf="errorMessage" role="status" aria-live="polite">
+    {{ errorMessage }}
+  </div>
+
+  <div
+    class="video-loading"
+    *ngIf="isLoading"
+    role="status"
+    aria-live="polite"
+    [attr.aria-busy]="isLoading">
+    <div class="app-spinner" aria-hidden="true"></div>
+    <p>Cargando video...</p>
+  </div>
+
+  <section class="video-frame" *ngIf="!isLoading && !videoMissing && !errorMessage">
+    <video
+      *ngIf="videoUrl; else videoPlaceholder"
+      controls
+      preload="metadata"
+      playsinline
+      [attr.poster]="videoPoster || ''"
+      [attr.title]="exerciseTitle">
+      <source [src]="videoUrl" type="video/mp4" />
+      Tu navegador no soporta reproducir video.
+    </video>
+    <ng-template #videoPlaceholder>
+      <div class="video-placeholder">
+        <p>No hay video disponible para este ejercicio.</p>
+      </div>
+    </ng-template>
+  </section>
+
+  <div class="video-missing" *ngIf="!isLoading && videoMissing && !errorMessage">
+    <p>No encontramos un video para este ejercicio.</p>
+    <button class="client-button" type="button" (click)="goBack()">Volver</button>
+  </div>
+</div>

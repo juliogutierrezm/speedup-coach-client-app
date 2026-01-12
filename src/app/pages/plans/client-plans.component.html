@@ -1,0 +1,51 @@
+<div class="plans-page">
+  <header class="plans-header">
+    <h1>Mis planes de entrenamiento</h1>
+    <p>Revisa tus planes activos y lo que sigue esta semana.</p>
+  </header>
+
+  <div class="plans-error" *ngIf="errorMessage" role="status" aria-live="polite">
+    {{ errorMessage }}
+  </div>
+
+  <div
+    class="plans-loading"
+    *ngIf="isLoading"
+    role="status"
+    aria-live="polite"
+    [attr.aria-busy]="isLoading">
+    <div class="app-spinner" aria-hidden="true"></div>
+    <p>Cargando tus planes...</p>
+  </div>
+
+  <section class="plans-list" *ngIf="!isLoading && !errorMessage">
+    <article
+      class="client-card plan-card"
+      *ngFor="let plan of plans; trackBy: trackByPlan"
+      role="button"
+      tabindex="0"
+      (click)="openPlan(plan)"
+      (keydown)="onPlanKeydown($event, plan)"
+      [attr.aria-label]="getPlanAriaLabel(plan)">
+      <div class="plan-meta" *ngIf="plan.date">
+        <span class="plan-label">Fecha</span>
+        <span class="plan-value">{{ plan.date | date: 'dd/MM/yyyy' }}</span>
+      </div>
+
+      <h3 class="plan-objective">
+        {{ plan.objective || plan.name || 'Objetivo pendiente' }}
+      </h3>
+
+      <p class="plan-sessions">
+        <span class="plan-label">Sesiones:</span>
+        <span class="plan-value">{{ getSessionCount(plan) }}</span>
+      </p>
+
+      <span class="plan-chevron" aria-hidden="true">›</span>
+    </article>
+
+    <div class="plans-empty" *ngIf="!plans.length">
+      <p>Aún no tienes planes de entrenamiento asignados.</p>
+    </div>
+  </section>
+</div>

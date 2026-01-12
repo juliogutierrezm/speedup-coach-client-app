@@ -1,0 +1,13 @@
+<div class="unauthorized-page">
+  <div class="unauthorized-card">
+    <p class="unauthorized-label">Acceso denegado</p>
+    <h1>Esta aplicación es solo para clientes.</h1>
+    <p class="unauthorized-subtitle">
+      Rol detectado: <span class="unauthorized-role">{{ getRoleDisplayName(currentUser?.role) }}</span>
+    </p>
+    <div class="unauthorized-actions">
+      <button type="button" (click)="goToLogin()">Volver al inicio</button>
+      <button type="button" (click)="signOut()">Cerrar sesión</button>
+    </div>
+  </div>
+</div>

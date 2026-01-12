@@ -1,0 +1,67 @@
+.unauthorized-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  padding: 20px;
+}
+
+.unauthorized-card {
+  width: 100%;
+  max-width: 480px;
+  padding: 32px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+  text-align: center;
+  color: var(--c-text, #0f172a);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.unauthorized-label {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #7c3aed;
+}
+
+.unauthorized-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(15, 23, 42, 0.7);
+}
+
+.unauthorized-role {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.unauthorized-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.unauthorized-actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.unauthorized-actions button:first-child {
+  background: #0f172a;
+  color: #fff;
+}
+
+.unauthorized-actions button:last-child {
+  background: transparent;
+  border: 1px solid rgba(15, 23, 42, 0.3);
+  color: #0f172a;
+}

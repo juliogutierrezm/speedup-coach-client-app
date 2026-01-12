@@ -1,0 +1,55 @@
+@use './app/styles/liquid' as *;
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --c-bg: #f5f7fb;
+  --c-surface: #ffffff;
+  --c-surface-2: rgba(15, 23, 42, 0.04);
+  --c-text: #0f172a;
+  --c-muted: rgba(15, 23, 42, 0.65);
+  --c-border: rgba(15, 23, 42, 0.1);
+  --c-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+  --c-primary: #0f172a;
+  --c-accent: #06b6d4;
+  --c-font: 'Inter', 'Poppins', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--c-font);
+  background-color: var(--c-bg);
+  color: var(--c-text);
+  min-height: 100vh;
+}
+
+.app-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.15);
+  border-top-color: var(--c-accent);
+  border-radius: 999px;
+  animation: spinner 1s linear infinite;
+}
+
+@keyframes spinner {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.liquid-card {
+  border-radius: 16px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  box-shadow: var(--c-shadow);
+}

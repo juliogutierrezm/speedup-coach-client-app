@@ -1,0 +1,63 @@
+<div class="profile-page">
+  <header class="profile-header">
+    <h1>Información personal</h1>
+    <p>Consulta los datos registrados en tu cuenta.</p>
+  </header>
+
+  <div class="profile-error" *ngIf="errorMessage" role="status" aria-live="polite">
+    {{ errorMessage }}
+  </div>
+
+  <div
+    class="profile-loading"
+    *ngIf="isLoading"
+    role="status"
+    aria-live="polite"
+    [attr.aria-busy]="isLoading">
+    <div class="app-spinner" aria-hidden="true"></div>
+    <p>Cargando tu perfil...</p>
+  </div>
+
+  <section *ngIf="!isLoading && !errorMessage">
+    <article class="client-card profile-card" *ngIf="hasProfileData; else emptyState">
+      <div class="profile-row" *ngIf="displayName">
+        <span class="profile-label">Nombre</span>
+        <span class="profile-value">{{ displayName }}</span>
+      </div>
+
+      <div class="profile-row" *ngIf="profile?.email">
+        <span class="profile-label">Email</span>
+        <span class="profile-value">{{ profile?.email }}</span>
+      </div>
+
+      <div class="profile-row" *ngIf="displayAge !== null">
+        <span class="profile-label">Edad</span>
+        <span class="profile-value">{{ displayAge }} años</span>
+      </div>
+
+      <div class="profile-row" *ngIf="injuriesList.length || injuriesText">
+        <span class="profile-label">Lesiones</span>
+        <div class="profile-value">
+          <div class="injury-chips" *ngIf="injuriesList.length; else injuriesTextBlock">
+            <span class="client-chip" *ngFor="let injury of injuriesList">{{ injury }}</span>
+          </div>
+          <ng-template #injuriesTextBlock>
+            <span>{{ injuriesText }}</span>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="profile-row" *ngIf="trainerName">
+        <span class="profile-label">Entrenador</span>
+        <span class="profile-value">{{ trainerName }}</span>
+      </div>
+    </article>
+
+    <ng-template #emptyState>
+      <div class="profile-empty">
+        <div class="profile-icon">👤</div>
+        <p>Aún no tenemos información suficiente para mostrar tu perfil.</p>
+      </div>
+    </ng-template>
+  </section>
+</div>

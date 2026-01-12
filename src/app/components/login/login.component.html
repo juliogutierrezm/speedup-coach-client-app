@@ -1,0 +1,22 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="brand">
+      <h1>SpeedUp Coach</h1>
+      <p>Tu panel de entrenamiento personalizado</p>
+    </div>
+
+    <div class="actions" *ngIf="!loading">
+      <button type="button" class="primary" (click)="signInWithHostedUI()">
+        Iniciar sesión
+      </button>
+      <button type="button" class="secondary" (click)="signUpWithHostedUI()">
+        Crear cuenta
+      </button>
+    </div>
+
+    <div class="loading" *ngIf="loading">
+      <div class="app-spinner" aria-hidden="true"></div>
+      <p>Redirigiendo a tu proveedor de identidad...</p>
+    </div>
+  </div>
+</div>
