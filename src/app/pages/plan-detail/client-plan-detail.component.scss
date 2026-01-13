@@ -1,218 +1,380 @@
+/* =========================
+   PLAN DETAIL PAGE
+========================= */
+
 .plan-detail-page {
+  margin: 0 auto;
+  width: min(980px, 100%);
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  color: var(--c-text, #111827);
+  gap: 16px;
 }
+
+/* =========================
+   HEADER (PLAN DETAIL)
+========================= */
 
 .plan-detail-header {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: center;
+
+  padding: clamp(1.2rem, 3vw, 1.7rem);
+  border-radius: 22px;
+  border: 1px solid var(--c-border);
+  background: var(--surface-base);
+  overflow: hidden;
 }
 
-.plan-header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+/* Accent strip (reused from plan list) */
+.plan-card-top {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 10px;
+  background: linear-gradient(
+    135deg,
+    var(--c-primary),
+    var(--c-accent)
+  );
 }
+
+/* Back button */
 
 .nav-back {
-  border: 1px solid rgba(17, 24, 39, 0.3);
-  background: var(--c-surface, #ffffff);
-  color: var(--c-text, #111827);
-  border-radius: 12px;
-  width: 40px;
-  height: 40px;
-  font-size: 18px;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  border: 1px solid var(--c-border);
+  background: var(--surface-soft);
+  display: grid;
+  place-items: center;
+  color: var(--c-text);
   cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease;
 }
 
-.plan-header-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.nav-back:hover {
+  transform: translateY(-1px);
+  border-color: var(--c-accent);
 }
 
-.plan-title {
-  margin: 0;
-  font-size: 22px;
+/* Title */
+
+.plan-detail-title h5 {
+  margin: 0.15rem 0 0;
+  font-size: clamp(1.8rem, 3vw, 2.3rem);
   font-weight: 600;
+  color: var(--c-text);
+}
+
+.plan-line {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
 }
 
 .plan-chip {
-  padding: 4px 12px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  background: var(--c-surface-2, rgba(17, 24, 39, 0.08));
-  border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
-  color: var(--c-muted, rgba(17, 24, 39, 0.6));
+  font-weight: 600;
+
+  background: var(--surface-soft);
+  border: 1px solid var(--c-border);
+  color: var(--c-muted);
 }
 
-.plan-header-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 13px;
-}
-
-.plan-error {
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(220, 38, 38, 0.35);
-  color: #b91c1c;
-  background-color: rgba(254, 226, 226, 0.9);
-  font-weight: 500;
-}
-
-.plan-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 24px 0;
-  color: var(--c-muted, rgba(17, 24, 39, 0.6));
-}
-
-.plan-sessions-section h2 {
-  margin: 0 0 8px;
-  color: var(--c-muted, rgba(17, 24, 39, 0.6));
-}
+/* =========================
+   PROGRESSIONS ACCORDION
+========================= */
 
 .progressions-accordion {
-  margin-bottom: 14px;
-  padding: 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(37, 99, 235, 0.25);
-  background: rgba(14, 165, 233, 0.05);
+  border-radius: 18px;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--c-border);
+  background: var(--surface-base);
 }
 
-.progressions-accordion summary {
-  font-weight: 600;
+/* Summary row */
+
+.progressions-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   cursor: pointer;
+  list-style: none;
 }
+
+.progressions-summary::-webkit-details-marker {
+  display: none;
+}
+
+.progressions-summary-left {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.progressions-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--c-text);
+}
+
+.progressions-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--c-border);
+}
+
+.progressions-toggle {
+  font-size: 1.1rem;
+  color: var(--c-muted);
+  transition: transform 200ms ease, color 200ms ease;
+}
+
+/* Open state */
+
+.progressions-accordion[open] .progressions-toggle {
+  transform: rotate(180deg);
+  color: var(--c-text);
+}
+
+.progressions-accordion[open] .progressions-title {
+  color: var(--c-text);
+}
+
+/* Subtitle */
 
 .progressions-subtitle {
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--c-muted, rgba(17, 24, 39, 0.6));
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--c-muted);
 }
+
+/* =========================
+   WEEKS SEQUENCE
+========================= */
 
 .progressions-weeks {
+  margin-top: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 0.85rem;
+  position: relative;
 }
 
+/* Each week */
+
 .progressions-week {
-  padding-top: 10px;
-  border-top: 1px dashed rgba(17, 24, 39, 0.2);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: flex-start;
 }
+
+/* Marker (timeline feel) */
+
+.week-marker {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c-primary);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--color-primary) / 0.15),
+    rgb(var(--color-accent) / 0.15)
+  );
+  border: 1px solid rgb(var(--color-primary) / 0.35);
+}
+
+/* Content box with gradient outline */
+
+.week-content {
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  background: rgb(var(--color-surface) / 0.85);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+
+.week-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    var(--c-primary),
+    var(--c-accent)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Text */
 
 .week-heading {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  font-size: 13px;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
 .week-label {
-  color: var(--c-text, #111827);
+  color: var(--c-text);
 }
 
-.week-title,
+.week-title {
+  color: var(--c-muted);
+}
+
 .week-note {
-  color: var(--c-muted, rgba(17, 24, 39, 0.6));
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--c-muted);
 }
 
-.sessions-list {
+
+/* =========================
+   SESSIONS SHELL
+========================= */
+
+.sessions-shell {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.client-card {
-  border-radius: 12px;
-  border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
-  background-color: var(--c-surface, #ffffff);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-  padding: 16px 20px;
+/* IMPORTANTE: aquí va el espacio */
+.sessions-list {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 14px;
 }
+
+/* =========================
+   SESSION CARD (GRADIENT OUTLINE)
+========================= */
+
+.session-card-outline {
+  padding: 1px;
+  border-radius: 22px;
+  background: linear-gradient(
+    135deg,
+    var(--c-primary),
+    var(--c-accent)
+  );
+}
+
+/* Card */
 
 .session-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  padding: 1rem 1.1rem;
+  border-radius: 21px;
+  background: var(--surface-base);
+
   cursor: pointer;
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
-.session-card:focus-visible,
-.session-card:hover {
+.session-card:hover,
+.session-card:focus-visible {
   transform: translateY(-2px);
-  box-shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 20px 45px rgba(var(--color-shadow) / 0.28);
+}
+
+/* Content */
+
+.session-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .session-title {
-  font-size: 16px;
+  margin: 0;
+  font-size: 1.05rem;
   font-weight: 600;
+  color: var(--c-text);
 }
 
 .session-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--c-muted, rgba(17, 24, 39, 0.6));
+  gap: 0.45rem;
 }
 
 .session-chip {
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(17, 24, 39, 0.15);
-  background-color: rgba(17, 24, 39, 0.05);
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--c-border);
+  color: var(--c-muted);
 }
 
+/* Chevron */
+
 .session-chevron {
-  font-size: 20px;
-  color: var(--c-muted, rgba(17, 24, 39, 0.5));
+  font-size: 1.4rem;
   font-weight: 600;
+  color: var(--c-muted);
 }
+
+
+/* =========================
+   EMPTY STATES
+========================= */
 
 .sessions-empty,
 .plan-empty {
-  padding: 18px;
-  border-radius: 12px;
-  border: 1px dashed var(--c-border, rgba(0, 0, 0, 0.1));
-  background-color: var(--c-surface-2, rgba(17, 24, 39, 0.03));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  color: var(--c-muted, rgba(17, 24, 39, 0.6));
+  padding: 1rem 1.2rem;
+  border-radius: 18px;
+  border: 1px dashed var(--c-border);
+  color: var(--c-muted);
+  text-align: center;
 }
 
-.client-button {
-  margin-top: 4px;
-  padding: 10px 16px;
-  border-radius: 6px;
-  border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
-  background-color: var(--c-surface, #ffffff);
-  color: var(--c-text, #111827);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.client-button:hover {
-  background-color: var(--c-surface-2, rgba(17, 24, 39, 0.05));
-}
+/* =========================
+   RESPONSIVE
+========================= */
 
 @media (min-width: 720px) {
-  .plan-title {
-    font-size: 26px;
+  .plan-detail-header {
+    grid-template-columns: auto 1fr;
+  }
+
+  .sessions-shell {
+    padding: 0.5rem;
   }
 }

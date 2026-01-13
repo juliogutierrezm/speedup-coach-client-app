@@ -1,42 +1,118 @@
-/* Purpose: Shared liquid UI styles for client surfaces. Inputs: local --glass-* and --c-* tokens. Error-handling: N/A. Standards Check: SRP OK | DRY OK | Tests Pending. */
-.liquid-card {
+/* Purpose: Shared liquid UI styles for all client surfaces. Inputs: design tokens from styles.scss. */
+.liquid-panel,
+.liquid-card,
+.liquid-surface {
   position: relative;
   border-radius: var(--glass-radius);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  background: var(--glass-bg-light);
-  border: 1px solid var(--glass-border-light);
-  box-shadow: var(--glass-shadow-light);
+  background: var(--surface-base);
+  border: 1px solid rgba(var(--color-border-soft), 0.25);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
 }
 
-:host-context(.client-app.is-dark) .liquid-card {
-  background: var(--glass-bg-dark);
-  border: 1px solid var(--glass-border-dark);
-  box-shadow: var(--glass-shadow-dark);
+.dark .liquid-panel,
+.dark .liquid-card,
+.dark .liquid-surface {
+  background: var(--surface-base);
+  border-color: rgba(var(--color-border-soft), 0.45);
+}
+
+.liquid-panel::after,
+.liquid-card::after,
+.liquid-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.08), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.liquid-panel:hover,
+.liquid-card:hover,
+.liquid-surface:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 30px 60px rgba(var(--color-shadow) / 0.35);
+}
+
+.liquid-panel:hover::after,
+.liquid-card:hover::after,
+.liquid-surface:hover::after {
+  opacity: 1;
 }
 
 .liquid-title {
-  font-size: 16px;
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  color: var(--c-text);
 }
 
 .liquid-subtitle {
-  font-size: 13px;
+  font-size: 0.85rem;
   color: var(--c-muted);
+  letter-spacing: 0.01em;
 }
 
 .liquid-meta {
-  font-size: 12px;
-  opacity: 0.85;
+  font-size: 0.78rem;
+  color: var(--c-muted);
 }
 
-.liquid-button {
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 14px;
-  font-weight: 500;
-  background: color-mix(in srgb, var(--c-primary) 22%, transparent);
+.liquid-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgb(var(--color-surface-soft) / 0.5);
+  border: 1px solid var(--glass-border-soft);
+  color: var(--c-muted);
+}
+
+.dark .liquid-chip {
+  background: rgb(var(--color-surface-soft) / 0.35);
+}
+
+.liquid-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.liquid-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.liquid-divider {
+  height: 1px;
+  background: rgb(var(--color-border-soft) / 0.4);
+  border-radius: 999px;
+  margin: 0.5rem 0;
+}
+
+.liquid-hero {
+  font-family: var(--font-display);
+  font-weight: 600;
   color: var(--c-text);
-  border: 1px solid var(--c-border);
+  text-transform: none;
+}
+
+.liquid-subtle-link {
+  font-size: 0.85rem;
+  color: var(--c-accent);
+  text-decoration: none;
+  transition: opacity 220ms ease;
+}
+
+.liquid-subtle-link:hover {
+  opacity: 0.8;
 }

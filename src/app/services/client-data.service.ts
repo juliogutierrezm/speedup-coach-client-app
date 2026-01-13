@@ -19,6 +19,9 @@ export interface ClientProfile {
   noInjuries?: boolean;
   trainerId?: string;
   trainerName?: string;
+  telephone?: string;
+  gender?: string;
+  notes?: string;
 }
 
 export interface WorkoutSession {

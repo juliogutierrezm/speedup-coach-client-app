@@ -142,16 +142,22 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
 
   private applyThemeSnapshot(theme: TenantTheme): void {
     const resolved = this.normalizeTheme(theme);
+    const isDarkMode = resolved.backgroundMode === 'dark';
     this.currentTheme = resolved;
-    this.debugDarkMode = resolved.backgroundMode === 'dark';
-    this.isDark = resolved.backgroundMode === 'dark';
+    this.debugDarkMode = isDarkMode;
+    this.isDark = isDarkMode;
+    this.setHtmlDarkClass(isDarkMode);
+
     this.themeTokens = {
       '--c-primary': resolved.primaryColor,
       '--c-accent': resolved.accentColor,
       '--c-font': resolved.fontFamily,
       '--c-app-name': resolved.appName || '',
-      '--c-tagline': resolved.tagline || ''
+      '--c-tagline': resolved.tagline || '',
+      '--color-primary': this.colorToRgb(resolved.primaryColor, '12 74 110'),
+      '--color-accent': this.colorToRgb(resolved.accentColor, '6 182 212')
     };
+
     this.cdr.markForCheck();
   }
 
@@ -214,5 +220,46 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
     const now = this.getNowMs();
     const elapsed = now - startedAt;
     return Number.isFinite(elapsed) ? Math.round(elapsed) : 0;
+  }
+
+  private setHtmlDarkClass(enabled: boolean): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    document.documentElement.classList.toggle('dark', enabled);
+  }
+
+  private colorToRgb(color: string, fallback: string): string {
+    const rgb = this.hexToRgb(color);
+    return rgb ?? fallback;
+  }
+
+  private hexToRgb(value: string | undefined): string | null {
+    if (!value) {
+      return null;
+    }
+
+    let cleaned = value.trim();
+    if (cleaned.startsWith('#')) {
+      cleaned = cleaned.slice(1);
+    }
+
+    if (cleaned.length === 3) {
+      cleaned = cleaned
+        .split('')
+        .map((segment) => `${segment}${segment}`)
+        .join('');
+    }
+
+    const isValid = /^[0-9a-f]{6}$/i.test(cleaned);
+    if (!isValid) {
+      return null;
+    }
+
+    const r = parseInt(cleaned.slice(0, 2), 16);
+    const g = parseInt(cleaned.slice(2, 4), 16);
+    const b = parseInt(cleaned.slice(4, 6), 16);
+    return `${r} ${g} ${b}`;
   }
 }

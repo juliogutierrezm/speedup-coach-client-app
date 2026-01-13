@@ -5,12 +5,6 @@ import { Subject, of } from 'rxjs';
 import { catchError, finalize, takeUntil } from 'rxjs/operators';
 import { ClientDataService, WorkoutPlan } from '../../services/client-data.service';
 
-/**
- * Purpose: Render the client plans list view with real data.
- * Input: none. Output: UI rendering and navigation.
- * Error handling: shows inline error messages on load failures and safe empty states.
- * Standards Check: SRP OK | DRY OK | Tests Pending.
- */
 @Component({
   selector: 'app-client-plans',
   standalone: true,
@@ -18,7 +12,8 @@ import { ClientDataService, WorkoutPlan } from '../../services/client-data.servi
     CommonModule
   ],
   templateUrl: './client-plans.component.html',
-  styleUrls: ['./client-plans.component.scss'],
+ styleUrls: ['./client-plans.component.scss']
+  ,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClientPlansComponent implements OnInit, OnDestroy {
@@ -70,11 +65,89 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Purpose: provide a stable trackBy key for plan rendering.
-   * Input: index and plan. Output: string key.
-   * Error handling: falls back to index when identifiers are missing.
+   * Purpose: return accent border style for plan cards based on objective.
+   * Input: WorkoutPlan. Output: string CSS style.
+   * Error handling: returns default primary color border.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
+  getAccentBorder(plan: WorkoutPlan): string {
+    const colors: Record<string, string> = {
+      'Ganar masa muscular': '#10b981',
+      'Flexibilidad': '#10b981',
+      'Pérdida de peso': '#f97316',
+      'Fuerza': '#a855f7',
+      'default': 'rgb(var(--color-primary))'
+    };
+    const color = colors[plan?.objective || ''] || colors.default;
+    return `4px solid ${color}`;
+  }
+
+  /**
+   * Purpose: return badge text based on plan objective.
+   * Input: WorkoutPlan. Output: string | null.
+   * Error handling: returns null for unknown objectives.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getPlanBadge(plan: WorkoutPlan): string | null {
+    const badges: Record<string, string> = {
+      'Ganar masa muscular': 'Más popular',
+      'Flexibilidad': 'Recuperación',
+      'Pérdida de peso': 'Alta intensidad',
+      'Fuerza': 'Fuerza'
+    };
+    return badges[plan?.objective || ''] || null;
+  }
+
+  /**
+   * Purpose: return Tailwind classes for badge styling based on objective.
+   * Input: WorkoutPlan. Output: string.
+   * Error handling: returns default primary badge classes.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getBadgeClasses(plan: WorkoutPlan): string {
+    const classes: Record<string, string> = {
+      'Ganar masa muscular': 'bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))]',
+      'Flexibilidad': 'bg-emerald-500/10 text-emerald-500',
+      'Pérdida de peso': 'bg-orange-500/10 text-orange-500',
+      'Fuerza': 'bg-purple-500/10 text-purple-500',
+      'default': 'bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))]'
+    };
+    return classes[plan?.objective || ''] || classes.default;
+  }
+
+  /**
+   * Purpose: return Tailwind classes for icon background based on objective.
+   * Input: WorkoutPlan. Output: string.
+   * Error handling: returns default primary background.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getIconBgClasses(plan: WorkoutPlan): string {
+    const classes: Record<string, string> = {
+      'Ganar masa muscular': 'bg-[rgb(var(--color-primary))]/10',
+      'Flexibilidad': 'bg-emerald-500/10',
+      'Pérdida de peso': 'bg-orange-500/10',
+      'Fuerza': 'bg-purple-500/10',
+      'default': 'bg-[rgb(var(--color-primary))]/10'
+    };
+    return classes[plan?.objective || ''] || classes.default;
+  }
+
+  /**
+   * Purpose: return Material Symbols icon name based on plan objective.
+   * Input: WorkoutPlan. Output: string.
+   * Error handling: returns default fitness_center icon.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getPlanIcon(plan: WorkoutPlan): string {
+    const icons: Record<string, string> = {
+      'Ganar masa muscular': 'fitness_center',
+      'Flexibilidad': 'self_improvement',
+      'Pérdida de peso': 'bolt',
+      'Fuerza': 'exercise'
+    };
+    return icons[plan?.objective || ''] || 'fitness_center';
+  }
+
   /**
    * Purpose: provide a stable trackBy key for plan rendering.
    * Input: index and plan. Output: string key.
@@ -123,11 +196,11 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
    */
   openPlan(plan: WorkoutPlan): void {
     const planId = this.getPlanKey(plan);
-        if (!planId) {
-          this.errorMessage = 'No pudimos abrir este plan.';
-          this.cdr.markForCheck();
-          return;
-        }
+    if (!planId) {
+      this.errorMessage = 'No pudimos identificar este plan.';
+      this.cdr.markForCheck();
+      return;
+    }
 
     this.router.navigate(['/plans', planId]);
   }

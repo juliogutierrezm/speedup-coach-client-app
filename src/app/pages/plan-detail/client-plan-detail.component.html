@@ -1,84 +1,202 @@
-<div class="plan-detail-page">
+<div class="plan-detail-page px-4 pb-8">
+
+  <!-- HEADER -->
   <header class="plan-detail-header">
-    <div class="plan-header-top">
-      <button class="nav-back" type="button" (click)="goBack()" aria-label="Volver a planes">
-        ←
-      </button>
-      <div class="plan-header-main" *ngIf="plan && !isLoading">
-        <h1 class="plan-title">{{ planTitle }}</h1>
-        <div class="plan-header-meta">
-          <span class="plan-sessions">
-            <span class="plan-label">Sesiones</span>
-            <span class="plan-value">{{ getSessionCount(plan) }}</span>
-          </span>
-        </div>
+
+    <!-- Accent strip -->
+    <div class="plan-card-top"></div>
+
+    <!-- Back -->
+    <a class="nav-back" role="button" tabindex="0" aria-label="Volver" (click)="goBack()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"><path fill="currentColor" d="M9.367 2.25h5.266c1.092 0 1.958 0 2.655.057c.714.058 1.317.18 1.869.46a4.75 4.75 0 0 1 2.075 2.077c.281.55.403 1.154.461 1.868c.057.697.057 1.563.057 2.655v5.266c0 1.092 0 1.958-.057 2.655c-.058.714-.18 1.317-.46 1.869a4.75 4.75 0 0 1-2.076 2.075c-.552.281-1.155.403-1.869.461c-.697.057-1.563.057-2.655.057H9.367c-1.092 0-1.958 0-2.655-.057c-.714-.058-1.317-.18-1.868-.46a4.75 4.75 0 0 1-2.076-2.076c-.281-.552-.403-1.155-.461-1.869c-.057-.697-.057-1.563-.057-2.655V9.367c0-1.092 0-1.958.057-2.655c.058-.714.18-1.317.46-1.868a4.75 4.75 0 0 1 2.077-2.076c.55-.281 1.154-.403 1.868-.461c.697-.057 1.563-.057 2.655-.057m2.163 5.72a.75.75 0 0 0-1.06 0l-3.5 3.5a.75.75 0 0 0 0 1.06l3.5 3.5a.75.75 0 1 0 1.06-1.06l-2.22-2.22h7.19a.75.75 0 0 0 0-1.5H9.31l2.22-2.22a.75.75 0 0 0 0-1.06"/>
+      </svg>
+    </a>
+
+    <!-- Title -->
+    <div class="plan-detail-title">
+      <h5>{{ planTitle }}</h5>
+
+      <div class="plan-line">
+        <span class="plan-chip" *ngIf="plan?.date">
+          {{ plan?.date | date: 'dd/MM/yyyy' }}
+        </span>
+
+        <span class="plan-chip">
+          {{ getSessionCount(plan) }}
+          {{ getSessionCount(plan) === 1 ? 'sesión' : 'sesiones' }}
+        </span>
       </div>
-      <span class="plan-chip" *ngIf="plan?.date && !isLoading">
-        {{ plan?.date | date:'dd/MM/yyyy' }}
-      </span>
     </div>
   </header>
 
-  <div class="plan-error" *ngIf="errorMessage" role="status" aria-live="polite">
+  <!-- ERROR -->
+  <div
+    class="plan-error"
+    *ngIf="errorMessage"
+    role="status"
+    aria-live="polite"
+  >
     {{ errorMessage }}
   </div>
 
+  <!-- LOADING -->
   <div
     class="plan-loading"
     *ngIf="isLoading"
     role="status"
     aria-live="polite"
-    [attr.aria-busy]="isLoading">
+    [attr.aria-busy]="isLoading"
+  >
     <div class="app-spinner" aria-hidden="true"></div>
-    <p>Cargando plan...</p>
+    <p>Cargando plan…</p>
   </div>
 
-  <section class="plan-sessions-section" *ngIf="!isLoading && plan && !errorMessage">
-    <details class="progressions-accordion" *ngIf="plan.progressions?.showProgressions">
-      <summary>Progresiones semanales</summary>
-      <p class="progressions-subtitle">Guía - no modifica el plan base</p>
+  <!-- CONTENT -->
+  <section
+    class="plan-content"
+    *ngIf="!isLoading && plan && !errorMessage"
+  >
+
+    <!-- PROGRESSIONS -->
+    <details
+      class="progressions-accordion"
+      *ngIf="plan.progressions?.showProgressions"
+    >
+      <summary class="progressions-summary">
+        <div class="progressions-summary-left">
+          <span class="progressions-title">Progresiones</span>
+          <span class="progressions-count">
+            {{ plan.progressions?.weeks?.length || 0 }}
+            semanas
+          </span>
+        </div>
+
+        <span class="progressions-toggle" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M7 9a1 1 0 0 0-.707 1.707l5 5a1 1 0 0 0 1.414 0l5-5A1 1 0 0 0 17 9z" clip-rule="evenodd"/></svg>
+        </span>
+      </summary>
+
+      <p class="progressions-subtitle">
+        Guía sugerida para el progreso durante el bloque.
+      </p>
+
       <div class="progressions-weeks">
-        <article class="progressions-week" *ngFor="let week of plan.progressions?.weeks || []; trackBy: trackByProgressionWeek">
-          <div class="week-heading">
-            <span class="week-label">Semana {{ week.week }}</span>
-            <span class="week-title" *ngIf="week.title">- {{ week.title }}</span>
+        <article
+          class="progressions-week"
+          *ngFor="let week of plan.progressions?.weeks || []; trackBy: trackByProgressionWeek"
+        >
+          <div class="week-marker">
+            <span>{{ week.week }}</span>
           </div>
-          <p class="week-note">{{ week.note }}</p>
+
+          <div class="week-content">
+            <div class="week-heading">
+              <span class="week-label">
+                Semana {{ week.week }}
+              </span>
+              <span class="week-title" *ngIf="week.title">
+                – {{ week.title }}
+              </span>
+            </div>
+
+            <p class="week-note">
+              {{ week.note }}
+            </p>
+          </div>
         </article>
       </div>
     </details>
 
-    <h2>Sesiones</h2>
-    <div class="sessions-list">
-      <article
-        class="client-card session-card"
-        *ngFor="let session of sessionList; let i = index"
-        role="button"
-        tabindex="0"
-        (click)="openSession(i)"
-        (keydown)="onSessionKeydown($event, i)"
-        [attr.aria-label]="getSessionAriaLabel(session, i)">
-        <div>
-          <div class="session-title">{{ getSessionTitle(session, i) }}</div>
-          <div class="session-meta">
-            <span class="session-chip" *ngIf="getSessionPrimaryMuscle(session) as muscle">
-              {{ muscle }}
-            </span>
-            <span class="session-chip" *ngIf="isSessionFunctional(session)">Funcional</span>
-            <span class="session-chip">{{ getSessionItemsCount(session) }} ejercicios</span>
-          </div>
-        </div>
-        <span class="session-chevron" aria-hidden="true">›</span>
-      </article>
 
-      <div class="sessions-empty" *ngIf="!sessionList.length">
-        <p>Este plan aún no tiene sesiones asignadas.</p>
+    <!-- SESSIONS -->
+    <div class="sessions-shell mt-6">
+      <div class="sessions-heading">
+        <h2>Sesiones</h2>
+      </div>
+
+      <div class="sessions-list mb-3">
+
+        <div
+          class="session-card-outline gap-3"
+          *ngFor="let session of sessionList; let i = index"
+        >
+          <article
+            class="session-card gap-5"
+            role="button"
+            tabindex="0"
+            (click)="openSession(i)"
+            (keydown)="onSessionKeydown($event, i)"
+            [attr.aria-label]="getSessionAriaLabel(session, i)"
+          >
+            <div class="session-info">
+              <div class="flex justify-between mb-2 items-center">
+                <h3 class="session-title">
+                  {{ getSessionTitle(session, i) }}
+                </h3>
+                <div>
+                              <svg xmlns="http://www.w3.org/2000/svg"width="30" height="30" viewBox="0 0 24 24">
+              <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                <path d="M16 2v4M8 2v4m5-2h-2C7.229 4 5.343 4 4.172 5.172S3 8.229 3 12v2c0 3.771 0 5.657 1.172 6.828S7.229 22 11 22h2c3.771 0 5.657 0 6.828-1.172S21 17.771 21 14v-2c0-3.771 0-5.657-1.172-6.828S16.771 4 13 4M3 10h18"/>
+                <path d="M9 16.5s1.5.5 2 2c0 0 2.177-4 5-5"/>
+              </g>
+            </svg>
+                </div>
+
+              </div>
+
+              <div class="session-meta">
+                <span
+                  class="session-chip"
+                  *ngIf="getSessionPrimaryMuscle(session) as muscle"
+                >
+                  {{ muscle }}
+                </span>
+
+                <span
+                  class="session-chip"
+                  *ngIf="isSessionFunctional(session)"
+                >
+                  Funcional
+                </span>
+
+                <span class="session-chip">
+                  {{ getSessionItemsCount(session) }} ejercicios
+                </span>
+              </div>
+            </div>
+
+            <span class="session-chevron" aria-hidden="true">
+              ›
+            </span>
+          </article>
+        </div>
+
+        <!-- EMPTY SESSIONS -->
+        <div
+          class="sessions-empty"
+          *ngIf="!sessionList.length"
+        >
+          <p>Este plan aún no tiene sesiones asignadas.</p>
+        </div>
+
       </div>
     </div>
   </section>
 
-  <div class="plan-empty" *ngIf="!isLoading && planMissing && !errorMessage">
+  <!-- PLAN NOT FOUND -->
+  <div
+    class="plan-empty"
+    *ngIf="!isLoading && planMissing && !errorMessage"
+  >
     <p>No encontramos este plan.</p>
-    <button class="client-button" type="button" (click)="goBack()">Volver</button>
+
+    <button
+      class="client-button"
+      type="button"
+      (click)="goBack()"
+    >
+      Volver
+    </button>
   </div>
+
 </div>

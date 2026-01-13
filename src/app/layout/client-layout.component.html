@@ -1,92 +1,149 @@
-<div class="client-app" [class.is-dark]="isDark" [ngStyle]="themeTokens">
+<div
+  class="client-app"
+  [class.is-dark]="isDark"
+  [ngStyle]="themeTokens"
+>
   <div
     class="client-loading"
     *ngIf="isThemeLoading"
     role="status"
     aria-live="polite"
-    [attr.aria-busy]="isThemeLoading">
+    [attr.aria-busy]="isThemeLoading"
+  >
     <div class="app-spinner" aria-hidden="true"></div>
     <p>Cargando tu experiencia...</p>
   </div>
 
   <ng-container *ngIf="!isThemeLoading">
-    <header class="client-header" role="banner">
-      <button
-        type="button"
-        class="menu-button"
-        aria-label="Abrir menú"
-        [attr.aria-expanded]="drawerOpen"
-        (click)="toggleDrawer()">
-        ☰
-      </button>
-      <div class="header-brand" *ngIf="currentTheme as theme">
-        <div class="brand-logo" *ngIf="theme.logoUrl">
-          <img [src]="theme.logoUrl" [alt]="theme.appName || 'Logo'" />
-        </div>
-        <div class="brand-text">
-          <div class="brand-name">{{ theme.appName }}</div>
-          <div class="brand-tagline">{{ theme.tagline }}</div>
-        </div>
-      </div>
-      <div class="header-actions">
-        <span class="header-focus">CLIENTE</span>
+
+    <header
+      class="client-header"
+      role="banner"
+      [class.drawer-open]="drawerOpen"
+    >
+      <div class="header-left">
         <button
           type="button"
-          class="sign-out"
-          (click)="signOut()"
-          [disabled]="isSigningOut">
-          {{ isSigningOut ? 'Cerrando...' : 'Cerrar sesión' }}
+          class="menu-button"
+          aria-label="Abrir menú"
+          [attr.aria-expanded]="drawerOpen"
+          (click)="toggleDrawer()"
+        >
+          <span class="menu-icon" aria-hidden="true"></span>
         </button>
-      </div>
-    </header>
 
-    <div
-      class="client-status"
-      *ngIf="statusMessage"
-      [ngClass]="`tone-${statusTone}`"
-      role="status"
-      aria-live="polite">
-      <span>{{ statusMessage }}</span>
-      <button type="button" class="status-close" (click)="dismissStatus()" aria-label="Cerrar mensaje">
-        ✕
-      </button>
-    </div>
-
-    <div class="client-frame">
-      <div class="drawer-backdrop" [class.open]="drawerOpen" (click)="closeDrawer()" aria-hidden="true"></div>
-      <aside class="client-drawer" [class.open]="drawerOpen" aria-label="Navegación principal">
-        <div class="drawer-brand" *ngIf="currentTheme as theme">
+        <div class="header-brand" *ngIf="currentTheme as theme">
           <div class="brand-logo" *ngIf="theme.logoUrl">
-            <img [src]="theme.logoUrl" [alt]="theme.appName || 'Logo'" />
+            <img
+              [src]="theme.logoUrl"
+              [alt]="theme.appName || 'Logo'"
+            />
           </div>
+
           <div class="brand-text">
             <div class="brand-name">{{ theme.appName }}</div>
             <div class="brand-tagline">{{ theme.tagline }}</div>
           </div>
         </div>
+      </div>
+    </header>
 
-        <nav class="drawer-nav">
-          <a routerLink="/plans" routerLinkActive="active" (click)="closeDrawer()">Planes</a>
-          <a routerLink="/profile" routerLinkActive="active" (click)="closeDrawer()">Perfil</a>
-          <button type="button" class="drawer-link" (click)="signOut(); closeDrawer()" [disabled]="isSigningOut">
-            Cerrar sesión
+    <div class="client-body">
+
+      <div
+        class="client-status"
+        *ngIf="statusMessage"
+        [ngClass]="'tone-' + statusTone"
+        role="status"
+        aria-live="polite"
+      >
+        <span>{{ statusMessage }}</span>
+        <button
+          type="button"
+          class="status-close"
+          (click)="dismissStatus()"
+          aria-label="Cerrar mensaje"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="client-frame">
+
+        <div
+          class="drawer-backdrop"
+          [class.open]="drawerOpen"
+          (click)="closeDrawer()"
+          aria-hidden="true"
+        ></div>
+
+        <aside
+          class="client-drawer"
+          [class.open]="drawerOpen"
+          aria-label="Navegación principal"
+        >
+          <div class="drawer-brand" *ngIf="currentTheme as theme">
+            <div class="brand-logo" *ngIf="theme.logoUrl">
+              <img [src]="theme.logoUrl" [alt]="theme.appName || 'Logo'" />
+            </div>
+
+            <div class="brand-text">
+              <div class="brand-name">{{ theme.appName }}</div>
+              <div class="brand-tagline">{{ theme.tagline }}</div>
+            </div>
+          </div>
+
+          <nav class="drawer-nav">
+            <a
+              class="drawer-item"
+              routerLink="/plans"
+              routerLinkActive="active"
+              (click)="closeDrawer()"
+            >
+              Planes
+            </a>
+
+            <a
+              class="drawer-item"
+              routerLink="/profile"
+              routerLinkActive="active"
+              (click)="closeDrawer()"
+            >
+              Perfil
+            </a>
+          </nav>
+
+          <div class="drawer-divider"></div>
+
+          <button
+            type="button"
+            class="drawer-logout"
+            (click)="signOut(); closeDrawer()"
+            [disabled]="isSigningOut"
+          >
+            {{ isSigningOut ? 'Cerrando…' : 'Cerrar sesión' }}
           </button>
-        </nav>
 
-        <div class="debug-toggle" *ngIf="debugThemeEnabled">
-          <label>
-            <input
-              type="checkbox"
-              [checked]="debugDarkMode"
-              (change)="onDebugThemeToggle($any($event.target).checked)" />
-            Fuerza tema oscuro
-          </label>
-        </div>
-      </aside>
+          <div class="drawer-controls" *ngIf="debugThemeEnabled">
+            <label class="debug-toggle">
+              <input
+                type="checkbox"
+                [checked]="debugDarkMode"
+                (change)="onDebugThemeToggle($any($event.target).checked)"
+              />
+              Fuerza tema oscuro
+            </label>
+          </div>
+        </aside>
 
-      <main class="client-content">
-        <router-outlet></router-outlet>
-      </main>
+
+        <main class="client-content">
+          <div class="client-content-shell">
+            <router-outlet></router-outlet>
+          </div>
+        </main>
+
+      </div>
     </div>
   </ng-container>
 </div>
