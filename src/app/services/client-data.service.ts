@@ -4,6 +4,7 @@ import { Observable, of } from 'rxjs';
 import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { ThemeService, TenantTheme } from './theme.service';
+import { BodyMetric } from '../models/body-metric.model';
 
 /* ============================
    Models
@@ -16,6 +17,7 @@ export interface ClientProfile {
   email?: string;
   age?: number;
   dateOfBirth?: string;
+  latestBodyMetrics?: BodyMetric;
   injuries?: string | string[];
   noInjuries?: boolean;
   trainerId?: string;
@@ -60,6 +62,7 @@ export interface ClientDataResponse {
   user: ClientProfile;
   plans: WorkoutPlan[];
   trainerName?: string;
+  bodyMetrics?: BodyMetric[];
   theme?: TenantTheme | null;
 }
 
@@ -109,6 +112,7 @@ export class ClientDataService {
             trainerName
           },
           plans: this.normalizePlans(res?.plans || []),
+          bodyMetrics: Array.isArray(res?.bodyMetrics) ? res.bodyMetrics : [],
           theme: res?.theme ?? null
         };
       }),
@@ -116,7 +120,7 @@ export class ClientDataService {
         const elapsedMs = this.getElapsedMs(startedAt);
         console.error('[ClientDataService] getClientData failed', { elapsedMs, error });
         this.themeService.applyTheme(null);
-        return of({ user: {} as ClientProfile, plans: [], theme: null });
+        return of({ user: {} as ClientProfile, plans: [], bodyMetrics: [], theme: null });
       }),
       shareReplay(1)
     );

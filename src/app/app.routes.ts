@@ -42,6 +42,13 @@ const clientRoutes: Routes = [
     loadComponent: () =>
       import('./pages/profile/client-profile.component').then(m => m.ClientProfileComponent)
   },
+  {
+    path: 'body-composition',
+    loadComponent: () =>
+      import('./pages/body-composition/client-body-composition.component').then(
+        m => m.ClientBodyCompositionComponent
+      )
+  },
   { path: '', redirectTo: 'plans', pathMatch: 'full' },
   { path: '**', redirectTo: 'plans' }
 ];
