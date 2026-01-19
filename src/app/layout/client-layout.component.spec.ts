@@ -5,6 +5,7 @@ import { ClientLayoutComponent } from './client-layout.component';
 import { ThemeService, TenantTheme } from '../services/theme.service';
 import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
+import { ClientDataService } from '../services/client-data.service';
 
 describe('ClientLayoutComponent', () => {
   const tenantTheme: TenantTheme = {
@@ -18,11 +19,11 @@ describe('ClientLayoutComponent', () => {
   };
 
   const themeServiceStub = {
-    tenantTheme$: of(tenantTheme),
-    getTenantTheme: () => of(tenantTheme),
-    applyTheme: () => {},
-    getCurrentTenantTheme: () => tenantTheme,
-    getDefaultTenantTheme: () => tenantTheme
+    tenantTheme$: of(tenantTheme)
+  };
+
+  const clientDataServiceStub = {
+    getClientData: () => of({ user: {} as any, plans: [], theme: tenantTheme })
   };
 
   const authServiceStub = {
@@ -37,6 +38,7 @@ describe('ClientLayoutComponent', () => {
       providers: [
         { provide: ThemeService, useValue: themeServiceStub },
         { provide: AuthService, useValue: authServiceStub },
+        { provide: ClientDataService, useValue: clientDataServiceStub },
         { provide: Router, useValue: routerStub }
       ]
     }).compileComponents();

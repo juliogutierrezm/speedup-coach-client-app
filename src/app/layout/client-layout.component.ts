@@ -2,9 +2,10 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, On
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { from, of, Subject } from 'rxjs';
-import { catchError, finalize, takeUntil, tap } from 'rxjs/operators';
+import { catchError, filter, finalize, takeUntil, tap } from 'rxjs/operators';
 import { ThemeService, TenantTheme } from '../services/theme.service';
 import { AuthService } from '../services/auth.service';
+import { ClientDataService } from '../services/client-data.service';
 import { environment } from '../../environments/environment';
 
 type StatusTone = 'info' | 'success' | 'error';
@@ -35,6 +36,7 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
   constructor(
     private themeService: ThemeService,
     private authService: AuthService,
+    private clientDataService: ClientDataService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
@@ -122,19 +124,24 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
     this.isThemeLoading = true;
     this.cdr.markForCheck();
 
-    this.themeService.getTenantTheme()
+    this.clientDataService.getClientData()
       .pipe(
-        tap(theme => this.applyThemeSnapshot(theme)),
         catchError(error => {
-          const fallback = this.themeService.getDefaultTenantTheme();
           this.handleThemeLoadError(error, startedAt);
-          this.applyThemeSnapshot(fallback);
-          return of(fallback);
+          return of(null);
         }),
         finalize(() => {
           this.isThemeLoading = false;
           this.cdr.markForCheck();
         }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe();
+    
+    this.themeService.tenantTheme$
+      .pipe(
+        filter((theme): theme is TenantTheme => !!theme),
+        tap(theme => this.applyThemeSnapshot(theme)),
         takeUntil(this.destroy$)
       )
       .subscribe();
@@ -198,17 +205,16 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
   }
 
   private normalizeTheme(theme: TenantTheme): TenantTheme {
-    const fallback = this.themeService.getDefaultTenantTheme();
     return {
-      tenantId: theme.tenantId || fallback.tenantId,
-      tenantType: theme.tenantType || fallback.tenantType,
-      primaryColor: theme.primaryColor || fallback.primaryColor,
-      accentColor: theme.accentColor || fallback.accentColor,
-      backgroundMode: theme.backgroundMode || fallback.backgroundMode,
-      fontFamily: theme.fontFamily || fallback.fontFamily,
-      appName: theme.appName || fallback.appName,
-      tagline: theme.tagline || fallback.tagline,
-      logoUrl: theme.logoUrl || fallback.logoUrl
+      tenantId: theme.tenantId,
+      tenantType: theme.tenantType,
+      primaryColor: theme.primaryColor,
+      accentColor: theme.accentColor,
+      backgroundMode: theme.backgroundMode,
+      fontFamily: theme.fontFamily,
+      appName: theme.appName || '',
+      tagline: theme.tagline || '',
+      logoUrl: theme.logoUrl || ''
     };
   }
 

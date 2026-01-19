@@ -28,7 +28,9 @@ export class ClientPlanDetailComponent implements OnInit, OnDestroy {
   planMissing = false;
   planId: string | null = null;
   sessionList: WorkoutSession[] = [];
+  allPlans: WorkoutPlan[] = [];
   errorMessage = '';
+  private planOrderMap = new Map<string, number>();
 
   private destroy$ = new Subject<void>();
 
@@ -126,6 +128,23 @@ export class ClientPlanDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Purpose: return the plan counter based on its position in the plans list.
+   * Input: WorkoutPlan | null. Output: number.
+   * Error handling: returns 0 when plan is null or not found in the list.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getplanCounter(plan: WorkoutPlan | null): number {
+    if (!plan) {
+      return 0;
+    }
+    const planKey = this.getPlanKey(plan);
+    if (!planKey) {
+      return 0;
+    }
+    return this.planOrderMap.get(planKey) ?? 0;
+  }
+
+  /**
    * Purpose: build a readable session title with fallback numbering.
    * Input: WorkoutSession and index. Output: string.
    * Error handling: uses default label when name is missing.
@@ -207,7 +226,11 @@ export class ClientPlanDetailComponent implements OnInit, OnDestroy {
           this.planId = planId;
           return this.clientDataService.getMyPlans();
         }),
-        map(plans => this.findPlan(plans, this.planId)),
+        map(plans => {
+          this.allPlans = this.sortPlansByCreatedAt(plans ?? []);
+          this.planOrderMap = this.buildPlanOrderMap(this.allPlans);
+          return this.findPlan(this.allPlans, this.planId);
+        }),
         catchError(error => {
           this.handleLoadError(error, startedAt);
           return of(null);
@@ -248,6 +271,63 @@ export class ClientPlanDetailComponent implements OnInit, OnDestroy {
     }
 
     return plans.find(plan => plan.planId === planId || plan.SK === planId) || null;
+  }
+
+  /**
+   * Purpose: resolve a stable plan key for ordering and lookup.
+   * Input: WorkoutPlan. Output: string | null.
+   * Error handling: returns null when identifiers are missing.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private getPlanKey(plan: WorkoutPlan): string | null {
+    return plan?.planId || plan?.SK || null;
+  }
+
+  /**
+   * Purpose: sort plans by createdAt (desc) with safe fallbacks.
+   * Input: WorkoutPlan[]. Output: WorkoutPlan[] sorted copy.
+   * Error handling: treats missing dates as 0 epoch.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private sortPlansByCreatedAt(plans: WorkoutPlan[]): WorkoutPlan[] {
+    return [...plans].sort((a, b) => {
+      const dateA = this.getPlanSortTime(a);
+      const dateB = this.getPlanSortTime(b);
+      return dateB - dateA;
+    });
+  }
+
+  /**
+   * Purpose: build a deterministic ordering map for plan numbering.
+   * Input: ordered WorkoutPlan[]. Output: Map<planKey, order>.
+   * Error handling: skips plans without a stable key.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private buildPlanOrderMap(plans: WorkoutPlan[]): Map<string, number> {
+    const map = new Map<string, number>();
+    const total = plans.length;
+    plans.forEach((plan, index) => {
+      const key = this.getPlanKey(plan);
+      if (key) {
+        map.set(key, total - index);
+      }
+    });
+    return map;
+  }
+
+  /**
+   * Purpose: resolve a sort timestamp for plan ordering.
+   * Input: WorkoutPlan. Output: number (ms).
+   * Error handling: falls back to 0 for invalid dates.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private getPlanSortTime(plan: WorkoutPlan): number {
+    const createdAt = plan?.createdAt ? Date.parse(plan.createdAt) : NaN;
+    if (Number.isFinite(createdAt)) {
+      return createdAt;
+    }
+    const date = plan?.date ? Date.parse(plan.date) : NaN;
+    return Number.isFinite(date) ? date : 0;
   }
 
   /**

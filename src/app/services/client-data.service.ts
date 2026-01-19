@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError, map, shareReplay } from 'rxjs/operators';
+import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { ThemeService, TenantTheme } from './theme.service';
 
 /* ============================
    Models
@@ -45,6 +46,7 @@ export interface WorkoutPlan {
   planId?: string;
   SK?: string;
   date?: string;
+  createdAt?: string;
   objective?: string;
   totalSessions?: number;
   name?: string;
@@ -58,6 +60,7 @@ export interface ClientDataResponse {
   user: ClientProfile;
   plans: WorkoutPlan[];
   trainerName?: string;
+  theme?: TenantTheme | null;
 }
 
 /* ============================
@@ -75,13 +78,16 @@ export class ClientDataService {
   private readonly clientUrl = `${environment.apiBase}/clients`;
   private clientData$?: Observable<ClientDataResponse>;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private themeService: ThemeService
+  ) {}
 
   /**
-   * Purpose: fetch authenticated client profile and workout plans.
+   * Purpose: fetch authenticated client profile, workout plans, and apply backend theme.
    * Input: none (identity resolved by backend via Cognito sub).
    * Output: Observable<ClientDataResponse>.
-   * Error handling: returns safe empty structure on errors.
+   * Error handling: returns safe empty structure on errors and applies default theme.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
   getClientData(): Observable<ClientDataResponse> {
@@ -91,6 +97,9 @@ export class ClientDataService {
 
     const startedAt = this.getNowMs();
     this.clientData$ = this.http.get<ClientDataResponse>(this.clientUrl).pipe(
+      tap(res => {
+        this.themeService.applyTheme(res?.theme ?? null);
+      }),
       map(res => {
         const user = res?.user || ({} as ClientProfile);
         const trainerName = user.trainerName || res?.trainerName || '';
@@ -99,13 +108,15 @@ export class ClientDataService {
             ...user,
             trainerName
           },
-          plans: this.normalizePlans(res?.plans || [])
+          plans: this.normalizePlans(res?.plans || []),
+          theme: res?.theme ?? null
         };
       }),
       catchError(error => {
         const elapsedMs = this.getElapsedMs(startedAt);
         console.error('[ClientDataService] getClientData failed', { elapsedMs, error });
-        return of({ user: {} as ClientProfile, plans: [] });
+        this.themeService.applyTheme(null);
+        return of({ user: {} as ClientProfile, plans: [], theme: null });
       }),
       shareReplay(1)
     );

@@ -20,6 +20,7 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
   plans: WorkoutPlan[] = [];
   isLoading = false;
   errorMessage = '';
+  private planOrderMap = new Map<string, number>();
 
   private destroy$ = new Subject<void>();
 
@@ -62,6 +63,20 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
       return plan.totalSessions;
     }
     return Array.isArray(plan?.sessions) ? plan.sessions.length : 0;
+  }
+
+  /**
+   * Purpose: return the plan counter based on its position in the plans list.
+   * Input: WorkoutPlan. Output: number.
+   * Error handling: returns 0 when plan is not found in the list.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getPlanCounter(plan: WorkoutPlan): number {
+    const planKey = this.getPlanKey(plan);
+    if (!planKey) {
+      return 0;
+    }
+    return this.planOrderMap.get(planKey) ?? 0;
   }
 
   /**
@@ -183,7 +198,8 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe(plans => {
-        this.plans = plans ?? [];
+        this.plans = this.sortPlansByCreatedAt(plans ?? []);
+        this.planOrderMap = this.buildPlanOrderMap(this.plans);
         this.cdr.markForCheck();
       });
   }
@@ -237,6 +253,53 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
    */
   private getPlanKey(plan: WorkoutPlan): string | null {
     return plan?.planId || plan?.SK || null;
+  }
+
+  /**
+   * Purpose: sort plans by createdAt (desc) with safe fallbacks.
+   * Input: WorkoutPlan[]. Output: WorkoutPlan[] sorted copy.
+   * Error handling: treats missing dates as 0 epoch.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private sortPlansByCreatedAt(plans: WorkoutPlan[]): WorkoutPlan[] {
+    return [...plans].sort((a, b) => {
+      const dateA = this.getPlanSortTime(a);
+      const dateB = this.getPlanSortTime(b);
+      return dateB - dateA;
+    });
+  }
+
+  /**
+   * Purpose: build a deterministic ordering map for plan numbering.
+   * Input: ordered WorkoutPlan[]. Output: Map<planKey, order>.
+   * Error handling: skips plans without a stable key.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private buildPlanOrderMap(plans: WorkoutPlan[]): Map<string, number> {
+    const map = new Map<string, number>();
+    const total = plans.length;
+    plans.forEach((plan, index) => {
+      const key = this.getPlanKey(plan);
+      if (key) {
+        map.set(key, total - index);
+      }
+    });
+    return map;
+  }
+
+  /**
+   * Purpose: resolve a sort timestamp for plan ordering.
+   * Input: WorkoutPlan. Output: number (ms).
+   * Error handling: falls back to 0 for invalid dates.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private getPlanSortTime(plan: WorkoutPlan): number {
+    const createdAt = plan?.createdAt ? Date.parse(plan.createdAt) : NaN;
+    if (Number.isFinite(createdAt)) {
+      return createdAt;
+    }
+    const date = plan?.date ? Date.parse(plan.date) : NaN;
+    return Number.isFinite(date) ? date : 0;
   }
 
   /**

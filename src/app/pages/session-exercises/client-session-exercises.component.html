@@ -8,16 +8,14 @@
       aria-label="Volver al plan"
       [disabled]="isLoading"
     >
-      ←
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"><path fill="currentColor" d="M11.354 6.646a.5.5 0 0 1 0 .708L7.207 11.5H18a.5.5 0 0 1 0 1H7.207l4.147 4.146a.5.5 0 0 1-.708.708l-5-5a.5.5 0 0 1 0-.708l5-5a.5.5 0 0 1 .708 0"/></svg>
     </button>
-
     <div class="session-header-text">
       <p class="session-eyebrow">{{ planTitle }}</p>
       <h1 class="session-title">{{ sessionTitle }}</h1>
       <p class="session-count">{{ exerciseCount }} ejercicios</p>
     </div>
   </header>
-
   <!-- ERROR -->
   <div class="session-error" *ngIf="errorMessage">
     {{ errorMessage }}

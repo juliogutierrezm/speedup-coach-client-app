@@ -8,7 +8,7 @@
     <span *ngIf="plans.length" class="plans-count">
       {{ plans.length }} {{ plans.length === 1 ? 'ACTIVO' : 'ACTIVOS' }}
     </span>
-  </header>
+  </header> 
 
   <!-- Error -->
   <div *ngIf="errorMessage" class="plans-error" role="status">
@@ -38,7 +38,7 @@
         <!-- Header row -->
         <div class="plan-top-row flex items-center justify-between">
           <div class="plan-objective">
-            <span class="plan-label">Objetivo</span>
+            <span class="plan-label">Plan {{ getPlanCounter(plan) }} - Objetivo</span>
             <span class="plan-value">
               {{ plan.objective || 'Entrenamiento' }}
             </span>
