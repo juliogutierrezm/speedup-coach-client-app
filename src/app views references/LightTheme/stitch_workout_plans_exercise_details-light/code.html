@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Exercise Detail - Light Mode</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#007AFF", // iOS Blue
+                        "background": "#F2F2F7", // iOS Grouped Background
+                        "surface": "#FFFFFF",
+                        "text-main": "#000000",
+                        "text-secondary": "#3C3C43",
+                        "text-tertiary": "#8E8E93"
+                    },
+                    fontFamily: {
+                        "sans": ["Lexend", "-apple-system", "BlinkMacSystemFont", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "ios": "12px",
+                        "ios-lg": "16px",
+                        "ios-xl": "24px"
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        .material-symbols-outlined {
+            font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+            background-color: theme('colors.background');
+        }
+        .ios-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-text-main min-h-screen">
+<header class="sticky top-0 z-50 bg-white/90 ios-blur border-b border-gray-200">
+<div class="flex items-center justify-between px-4 h-14 max-w-md mx-auto">
+<button class="flex items-center gap-1 text-primary font-medium">
+<span class="material-symbols-outlined text-xl">arrow_back_ios</span>
+<span class="text-base">Back</span>
+</button>
+<h1 class="text-base font-semibold">Exercise Details</h1>
+<button class="w-10 h-10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+</header>
+<main class="max-w-md mx-auto pb-36">
+<div class="p-4">
+<div class="relative w-full aspect-video bg-white rounded-ios-lg overflow-hidden shadow-sm border border-gray-100">
+<img alt="Exercise demonstration" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4k-csgxQUxEM51XaaZYL9FSOW12rLq1mGqMSRJw7bkWas9kA90rBXm6lXPBfIlvhywB4QUOSmUf54x8f1FAjBmgRtiQwC_2OcN-v-3XfMryqRDUWn7mQxZh1NoRIwboljaRKRYrliYsFP9fg7p2G_0kw8wQA9RrnzpTfCViu0MIdF0eZF-0e8q2DpNz0dMETdS9uLEnuqnksqIJKqexPHt8q_RiLSOqZh892aIDzHLEYlk8fCjht_fsuhvNaY6nwtYoRm-LvZps8S"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<button class="w-14 h-14 flex items-center justify-center rounded-full bg-white/90 ios-blur text-primary shadow-xl">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+</div>
+<div class="absolute bottom-3 left-3 right-3 px-3 py-1 bg-black/40 ios-blur rounded-full flex justify-between items-center">
+<span class="text-[10px] text-white font-medium">0:14 / 0:45</span>
+<div class="flex-1 mx-3 h-1 bg-white/30 rounded-full overflow-hidden">
+<div class="h-full w-1/3 bg-white"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="px-4 mb-6">
+<div class="bg-surface rounded-ios-lg p-5 shadow-sm">
+<div class="mb-4">
+<h2 class="text-2xl font-bold tracking-tight">Barbell Bench Press</h2>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded">Chest</span>
+<span class="text-xs font-semibold text-text-tertiary bg-gray-100 px-2 py-0.5 rounded">Strength</span>
+</div>
+</div>
+<div class="grid grid-cols-4 border-t border-gray-100 pt-4">
+<div class="text-center">
+<p class="text-[10px] uppercase font-bold text-text-tertiary mb-1">Sets</p>
+<p class="text-lg font-bold">4</p>
+</div>
+<div class="text-center border-l border-gray-100">
+<p class="text-[10px] uppercase font-bold text-text-tertiary mb-1">Reps</p>
+<p class="text-lg font-bold">8-12</p>
+</div>
+<div class="text-center border-l border-gray-100">
+<p class="text-[10px] uppercase font-bold text-text-tertiary mb-1">Rest</p>
+<p class="text-lg font-bold">90s</p>
+</div>
+<div class="text-center border-l border-gray-100">
+<p class="text-[10px] uppercase font-bold text-text-tertiary mb-1">Load</p>
+<p class="text-lg font-bold text-primary">RPE 8</p>
+</div>
+</div>
+</div>
+</div>
+<div class="px-4 mb-6">
+<h3 class="text-sm font-bold text-text-secondary uppercase tracking-wider mb-3 ml-1">Pro Coaching</h3>
+<div class="space-y-3">
+<div class="bg-blue-50/50 border border-blue-100 p-4 rounded-ios-lg flex gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">info</span>
+<div>
+<h4 class="text-sm font-bold text-primary mb-1">Coach's Focus</h4>
+<p class="text-sm leading-relaxed text-text-secondary">
+                            Keep your shoulder blades retracted and "tucked" into your back pockets throughout the movement to stabilize the joint.
+                        </p>
+</div>
+</div>
+<div class="bg-surface p-4 rounded-ios-lg shadow-sm border border-gray-100 flex items-center gap-3">
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+<p class="text-sm font-medium">Full range of motion, touch the chest</p>
+</div>
+<div class="bg-surface p-4 rounded-ios-lg shadow-sm border border-gray-100 flex items-center gap-3">
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+<p class="text-sm font-medium">Keep feet flat and driven into floor</p>
+</div>
+</div>
+</div>
+<div class="px-4 mb-6">
+<h3 class="text-sm font-bold text-text-secondary uppercase tracking-wider mb-3 ml-1">Execution</h3>
+<div class="bg-surface p-5 rounded-ios-lg shadow-sm border border-gray-100">
+<p class="text-sm leading-relaxed text-text-secondary mb-5">
+                    The barbell bench press is the gold standard for developing upper body power. It engages the pectoralis major, anterior deltoids, and triceps.
+                </p>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 text-text-main text-xs flex items-center justify-center font-bold">1</div>
+<div>
+<p class="text-sm font-bold">Setup</p>
+<p class="text-xs text-text-tertiary mt-1">Lie flat, grip the bar slightly wider than shoulders. Eyes directly under the bar.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 text-text-main text-xs flex items-center justify-center font-bold">2</div>
+<div>
+<p class="text-sm font-bold">The Descent</p>
+<p class="text-xs text-text-tertiary mt-1">Lower under control to mid-sternum. Keep elbows at 45 degrees.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 text-text-main text-xs flex items-center justify-center font-bold">3</div>
+<div>
+<p class="text-sm font-bold">The Press</p>
+<p class="text-xs text-text-tertiary mt-1">Push back to start with explosive force. Exhale on the way up.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="px-4 mb-6">
+<h3 class="text-sm font-bold text-text-secondary uppercase tracking-wider mb-3 ml-1">Target Muscles</h3>
+<div class="bg-surface p-5 rounded-ios-lg shadow-sm border border-gray-100 flex flex-col items-center">
+<div class="w-full flex justify-center mb-6 opacity-80">
+<span class="material-symbols-outlined text-6xl text-gray-200">accessibility_new</span>
+</div>
+<div class="grid grid-cols-2 gap-3 w-full">
+<div class="bg-gray-50 p-3 rounded-ios border border-gray-100">
+<p class="text-[10px] font-bold text-primary uppercase mb-1">Primary</p>
+<p class="text-sm font-bold">Chest (Pectorals)</p>
+</div>
+<div class="bg-gray-50 p-3 rounded-ios border border-gray-100">
+<p class="text-[10px] font-bold text-text-tertiary uppercase mb-1">Secondary</p>
+<p class="text-sm font-bold">Triceps, Deltoids</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<div class="fixed bottom-0 left-0 right-0 bg-white/90 ios-blur border-t border-gray-200 p-4 pb-8 z-50">
+<div class="max-w-md mx-auto grid grid-cols-6 gap-3">
+<button class="col-span-1 h-14 flex items-center justify-center bg-gray-100 rounded-ios-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-text-secondary">history</span>
+</button>
+<button class="col-span-5 h-14 bg-primary text-white font-bold rounded-ios-lg shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+<span>Start Next Set</span>
+<span class="material-symbols-outlined text-lg">arrow_forward_ios</span>
+</button>
+</div>
+</div>
+
+</body></html>

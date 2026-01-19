@@ -1,51 +1,89 @@
-<div class="plans-page">
+<section class="plans-page">
+  <!-- Header -->
   <header class="plans-header">
-    <h1>Mis planes de entrenamiento</h1>
-    <p>Revisa tus planes activos y lo que sigue esta semana.</p>
-  </header>
+    <div class="plans-header-copy">
+      <p class="plans-eyebrow">Mis planes de entrenamiento</p>
+    </div>
 
-  <div class="plans-error" *ngIf="errorMessage" role="status" aria-live="polite">
+    <span *ngIf="plans.length" class="plans-count">
+      {{ plans.length }} {{ plans.length === 1 ? 'ACTIVO' : 'ACTIVOS' }}
+    </span>
+  </header> 
+
+  <!-- Error -->
+  <div *ngIf="errorMessage" class="plans-error" role="status">
     {{ errorMessage }}
   </div>
 
-  <div
-    class="plans-loading"
-    *ngIf="isLoading"
-    role="status"
-    aria-live="polite"
-    [attr.aria-busy]="isLoading">
-    <div class="app-spinner" aria-hidden="true"></div>
-    <p>Cargando tus planes...</p>
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="plans-loading" role="status">
+    <div class="app-spinner"></div>
+    <p>Cargando tus planes…</p>
   </div>
 
-  <section class="plans-list" *ngIf="!isLoading && !errorMessage">
+  <div *ngIf="!isLoading && !errorMessage" class="plans-list">
     <article
-      class="client-card plan-card"
       *ngFor="let plan of plans; trackBy: trackByPlan"
-      role="button"
+      class="plan-card"
       tabindex="0"
       (click)="openPlan(plan)"
       (keydown)="onPlanKeydown($event, plan)"
-      [attr.aria-label]="getPlanAriaLabel(plan)">
-      <div class="plan-meta" *ngIf="plan.date">
-        <span class="plan-label">Fecha</span>
-        <span class="plan-value">{{ plan.date | date: 'dd/MM/yyyy' }}</span>
+      [attr.aria-label]="getPlanAriaLabel(plan)"
+    >
+      <!-- Accent -->
+      <div class="plan-card-top"></div>
+
+      <!-- Body -->
+      <div class="plan-card-body">
+        <!-- Header row -->
+        <div class="plan-top-row flex items-center justify-between">
+          <div class="plan-objective">
+            <span class="plan-label">Plan {{ getPlanCounter(plan) }} - Objetivo</span>
+            <span class="plan-value">
+              {{ plan.objective || 'Entrenamiento' }}
+            </span>
+          </div>
+
+          <span class="plan-date-chip">
+            {{ plan.date ? (plan.date | date:'dd/MM/yyyy') : '—' }}
+          </span>
+
+          <!-- Main icon -->
+          <div class="plan-icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 48 48">            >
+              <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M16.597 20.873c4.063 2.379 6.224 11.679 2.204 15.647"/><ellipse cx="14.437" cy="29.269" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" rx="3.745" ry="7.299" transform="rotate(-7.829 14.436 29.269)"/><ellipse cx="30.977" cy="25.777" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" rx="3.745" ry="7.299" transform="rotate(-7.829 30.977 25.777)"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M32.69 17.679c4.511 2.41 5.63 11.624 2.575 15.598m-14.56-5.315l9.544-2.104m6.489-1.43l2.538-.56M8.724 30.603l5.332-1.176"/><ellipse cx="14.151" cy="29.269" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" rx="1.155" ry="2.435" transform="rotate(-11.918 14.151 29.27)"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M31.519 25.654c.312 1.297.08 2.52-.519 2.74s-1.344-.644-1.667-1.938c-.323-1.293-.104-2.531.49-2.774s1.342.6 1.675 1.89M37.123 5.5l.066 6.897l-2.215-1.437l-1.696 1.37l-.067-6.83"/><rect width="37" height="37" x="5.5" y="5.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" rx="4" ry="4"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="plan-footer flex items-center justify-between">
+          <!-- Calendar icon + sessions count -->
+          <div class="flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg"width="30" height="30" viewBox="0 0 24 24">
+              <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                <path d="M16 2v4M8 2v4m5-2h-2C7.229 4 5.343 4 4.172 5.172S3 8.229 3 12v2c0 3.771 0 5.657 1.172 6.828S7.229 22 11 22h2c3.771 0 5.657 0 6.828-1.172S21 17.771 21 14v-2c0-3.771 0-5.657-1.172-6.828S16.771 4 13 4M3 10h18"/>
+                <path d="M9 16.5s1.5.5 2 2c0 0 2.177-4 5-5"/>
+              </g>
+            </svg>
+
+            <span class="plan-sessions-count">{{ getSessionCount(plan) }}</span>
+            <span class="plan-sessions-label">
+              {{ getSessionCount(plan) === 1 ? 'Sesión' : 'Sesiones' }}
+            </span>
+          </div>
+
+          <!-- Arrow -->
+          <a class="plan-icon-container">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M9.367 2.25h5.266c1.092 0 1.958 0 2.655.057c.714.058 1.317.18 1.869.46a4.75 4.75 0 0 1 2.075 2.077c.281.55.403 1.154.461 1.868c.057.697.057 1.563.057 2.655v5.266c0 1.092 0 1.958-.057 2.655c-.058.714-.18 1.317-.46 1.869a4.75 4.75 0 0 1-2.076 2.075c-.552.281-1.155.403-1.869.461c-.697.057-1.563.057-2.655.057H9.367c-1.092 0-1.958 0-2.655-.057c-.714-.058-1.317-.18-1.868-.46a4.75 4.75 0 0 1-2.076-2.076c-.281-.552-.403-1.155-.461-1.869c-.057-.697-.057-1.563-.057-2.655V9.367c0-1.092 0-1.958.057-2.655c.058-.714.18-1.317.46-1.868a4.75 4.75 0 0 1 2.077-2.076c.55-.281 1.154-.403 1.868-.461c.697-.057 1.563-.057 2.655-.057m3.103 5.72a.75.75 0 0 0 0 1.06l2.22 2.22H7.5a.75.75 0 0 0 0 1.5h7.19l-2.22 2.22a.75.75 0 1 0 1.06 1.06l3.5-3.5a.75.75 0 0 0 0-1.06l-3.5-3.5a.75.75 0 0 0-1.06 0"
+              />
+            </svg>
+          </a>
+        </div>
       </div>
-
-      <h3 class="plan-objective">
-        {{ plan.objective || plan.name || 'Objetivo pendiente' }}
-      </h3>
-
-      <p class="plan-sessions">
-        <span class="plan-label">Sesiones:</span>
-        <span class="plan-value">{{ getSessionCount(plan) }}</span>
-      </p>
-
-      <span class="plan-chevron" aria-hidden="true">›</span>
     </article>
-
-    <div class="plans-empty" *ngIf="!plans.length">
-      <p>Aún no tienes planes de entrenamiento asignados.</p>
-    </div>
-  </section>
-</div>
+  </div>
+</section>

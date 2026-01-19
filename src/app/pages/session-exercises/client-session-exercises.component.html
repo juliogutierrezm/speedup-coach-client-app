@@ -1,7 +1,14 @@
 <div class="session-exercises-page">
+  <!-- HEADER -->
   <header class="session-header">
-    <button class="nav-back" type="button" (click)="goBack()" aria-label="Volver al plan" [disabled]="isLoading">
-      ←
+    <button
+      class="nav-back"
+      type="button"
+      (click)="goBack()"
+      aria-label="Volver al plan"
+      [disabled]="isLoading"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"><path fill="currentColor" d="M11.354 6.646a.5.5 0 0 1 0 .708L7.207 11.5H18a.5.5 0 0 1 0 1H7.207l4.147 4.146a.5.5 0 0 1-.708.708l-5-5a.5.5 0 0 1 0-.708l5-5a.5.5 0 0 1 .708 0"/></svg>
     </button>
     <div class="session-header-text">
       <p class="session-eyebrow">{{ planTitle }}</p>
@@ -9,104 +16,148 @@
       <p class="session-count">{{ exerciseCount }} ejercicios</p>
     </div>
   </header>
-
-  <div class="session-error" *ngIf="errorMessage" role="status" aria-live="polite">
+  <!-- ERROR -->
+  <div class="session-error" *ngIf="errorMessage">
     {{ errorMessage }}
   </div>
 
-  <div
-    class="session-loading"
-    *ngIf="isLoading"
-    role="status"
-    aria-live="polite"
-    [attr.aria-busy]="isLoading">
-    <div class="app-spinner" aria-hidden="true"></div>
-    <p>Cargando ejercicios...</p>
+  <!-- LOADING -->
+  <div class="session-loading" *ngIf="isLoading">
+    <div class="app-spinner"></div>
+    <p>Cargando ejercicios…</p>
   </div>
 
-  <section class="session-exercises-list" *ngIf="!isLoading && !sessionMissing && !errorMessage">
+  <!-- LIST -->
+  <section
+    class="session-exercises-list"
+    *ngIf="!isLoading && !sessionMissing && !errorMessage"
+  >
     <ng-container *ngFor="let item of sessionItems; trackBy: trackBySessionItem">
+
+      <!-- SINGLE EXERCISE -->
       <article
+        *ngIf="item.kind === 'exercise'"
         class="exercise-card"
-        *ngIf="item.kind === 'exercise' && item.exercise as exercise"
         role="button"
         tabindex="0"
         (click)="openExercise(item.flatIndex!)"
         (keydown)="onExerciseKeydown($event, item.flatIndex!)"
-        [attr.aria-label]="getExerciseAriaLabel(exercise, item.flatIndex!)">
+      >
+
+        <!-- Thumbnail -->
         <div class="exercise-thumb">
           <img
-            *ngIf="hasThumbnail(exercise, item.flatIndex!); else missingThumb"
-            [src]="exercise.thumbnail"
-            [alt]="getExerciseTitle(exercise, item.flatIndex!)"
-            (error)="onImageError(item.flatIndex!)" />
-          <ng-template #missingThumb>
-            <span class="thumb-placeholder">No imagen</span>
+            *ngIf="hasThumbnail(item.exercise!, item.flatIndex!); else noThumb"
+            [src]="item.exercise!.thumbnail"
+            [alt]="getExerciseTitle(item.exercise!, item.flatIndex!)"
+            (error)="onImageError(item.flatIndex!)"
+          />
+          <ng-template #noThumb>
+            <span class="thumb-placeholder">—</span>
           </ng-template>
         </div>
 
+        <!-- Info -->
         <div class="exercise-info">
-          <h3 class="exercise-name">{{ getExerciseTitle(exercise, item.flatIndex!) }}</h3>
-          <p class="exercise-program">{{ getProgrammingLine(exercise) }}</p>
-          <div class="exercise-tags" *ngIf="getExerciseMuscleLabel(exercise) || exercise.functional">
-            <span class="exercise-tag" *ngIf="getExerciseMuscleLabel(exercise) as muscle">{{ muscle }}</span>
-            <span class="exercise-tag" *ngIf="exercise.functional">Funcional</span>
+          <h3 class="exercise-name">
+            {{ getExerciseTitle(item.exercise!, item.flatIndex!) }}
+          </h3>
+
+          <p class="exercise-program">
+            {{ getProgrammingLine(item.exercise!) }}
+          </p>
+
+          <div class="exercise-tags">
+            <span
+              class="exercise-tag"
+              *ngIf="getExerciseMuscleLabel(item.exercise!) as muscle"
+            >
+              {{ muscle }}
+            </span>
+
+            <span
+              class="exercise-tag"
+              *ngIf="item.exercise!.functional"
+            >
+              Funcional
+            </span>
           </div>
         </div>
 
-        <span class="exercise-chevron" aria-hidden="true">›</span>
+        <!-- Chevron -->
+        <span class="exercise-chevron">›</span>
       </article>
 
-      <section
-        class="group-card"
-        *ngIf="item.kind === 'group' && item.group as group"
-        aria-label="Grupo de ejercicios">
-        <div class="group-header">
-          <span class="group-badge">{{ item.label }}</span>
-          <span class="group-name" *ngIf="group.name">{{ group.name }}</span>
-        </div>
-        <div class="group-children">
+      <!-- GROUP -->
+      <div *ngIf="item.kind === 'group'" class="exercise-group">
+        <h4 class="group-label">{{ item.label }}</h4>
+
+        <ng-container *ngFor="let child of item.children; trackBy: trackByGroupChild">
           <article
-            class="exercise-card child-card"
-            *ngFor="let child of item.children || []; trackBy: trackByGroupChild"
+            class="exercise-card"
             role="button"
             tabindex="0"
             (click)="openExercise(child.flatIndex)"
             (keydown)="onExerciseKeydown($event, child.flatIndex)"
-            [attr.aria-label]="getExerciseAriaLabel(child.exercise, child.flatIndex)">
+          >
+
+            <!-- Thumbnail -->
             <div class="exercise-thumb">
               <img
-                *ngIf="hasThumbnail(child.exercise, child.flatIndex); else childMissing"
+                *ngIf="hasThumbnail(child.exercise, child.flatIndex); else noThumb"
                 [src]="child.exercise.thumbnail"
                 [alt]="getExerciseTitle(child.exercise, child.flatIndex)"
-                (error)="onImageError(child.flatIndex)" />
-              <ng-template #childMissing>
-                <span class="thumb-placeholder">No imagen</span>
+                (error)="onImageError(child.flatIndex)"
+              />
+              <ng-template #noThumb>
+                <span class="thumb-placeholder">—</span>
               </ng-template>
             </div>
 
+            <!-- Info -->
             <div class="exercise-info">
-              <h3 class="exercise-name">{{ getExerciseTitle(child.exercise, child.flatIndex) }}</h3>
-              <p class="exercise-program">{{ getProgrammingLine(child.exercise) }}</p>
-              <div class="exercise-tags" *ngIf="getExerciseMuscleLabel(child.exercise) || child.exercise.functional">
-                <span class="exercise-tag" *ngIf="getExerciseMuscleLabel(child.exercise) as muscle">{{ muscle }}</span>
-                <span class="exercise-tag" *ngIf="child.exercise.functional">Funcional</span>
+              <h3 class="exercise-name">
+                {{ getExerciseTitle(child.exercise, child.flatIndex) }}
+              </h3>
+
+              <p class="exercise-program">
+                {{ getProgrammingLine(child.exercise) }}
+              </p>
+
+              <div class="exercise-tags">
+                <span
+                  class="exercise-tag"
+                  *ngIf="getExerciseMuscleLabel(child.exercise) as muscle"
+                >
+                  {{ muscle }}
+                </span>
+
+                <span
+                  class="exercise-tag"
+                  *ngIf="child.exercise.functional"
+                >
+                  Funcional
+                </span>
               </div>
             </div>
 
-            <span class="exercise-chevron" aria-hidden="true">›</span>
+            <!-- Chevron -->
+            <span class="exercise-chevron">›</span>
           </article>
-        </div>
-      </section>
+        </ng-container>
+      </div>
+
     </ng-container>
 
+    <!-- EMPTY -->
     <div class="session-empty" *ngIf="!sessionItems.length">
       <p>Esta sesión aún no tiene ejercicios.</p>
     </div>
   </section>
 
-  <div class="session-missing" *ngIf="!isLoading && sessionMissing && !errorMessage">
+  <!-- MISSING -->
+  <div class="session-missing" *ngIf="!isLoading && sessionMissing">
     <p>No encontramos esta sesión.</p>
-    <button class="client-button" type="button" (click)="goBack()">Volver</button>
+    <button class="client-button" (click)="goBack()">Volver</button>
   </div>
 </div>

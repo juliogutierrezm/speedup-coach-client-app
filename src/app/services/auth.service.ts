@@ -1,10 +1,11 @@
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, Observable, from, of } from 'rxjs';
-import { map, catchError, tap } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { Amplify } from 'aws-amplify';
 import { fetchAuthSession, signOut, getCurrentUser, signInWithRedirect } from 'aws-amplify/auth';
 import { awsExports } from '../../aws-exports';
+import { ThemeService } from './theme.service';
 
 // Configure Amplify
 Amplify.configure(awsExports);
@@ -37,7 +38,10 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
-  constructor(@Inject(PLATFORM_ID) platformId: Object) {
+  constructor(
+    @Inject(PLATFORM_ID) platformId: Object,
+    private themeService: ThemeService
+  ) {
     this.isBrowser = isPlatformBrowser(platformId);
     if (this.isBrowser) {
       this.checkAuthState();
@@ -69,11 +73,13 @@ export class AuthService {
       } else {
         this.currentUserSubject.next(null);
         this.isAuthenticatedSubject.next(false);
+        this.applyDefaultThemeWhenSignedOut();
       }
     } catch (error) {
       console.log('User not authenticated:', error);
       this.currentUserSubject.next(null);
       this.isAuthenticatedSubject.next(false);
+      this.applyDefaultThemeWhenSignedOut();
     }
   }
 
@@ -182,10 +188,24 @@ export class AuthService {
       await signOut();
       this.currentUserSubject.next(null);
       this.isAuthenticatedSubject.next(false);
+      this.applyDefaultThemeWhenSignedOut();
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
     }
+  }
+
+  /**
+   * Purpose: apply the default theme only for signed-out sessions.
+   * Input: none. Output: void.
+   * Error handling: delegates to ThemeService.applyTheme for logging.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private applyDefaultThemeWhenSignedOut(): void {
+    if (this.isAuthenticatedSubject.value) {
+      return;
+    }
+    this.themeService.applyTheme(null);
   }
 
   // Utility method to get auth session for API calls

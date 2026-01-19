@@ -1,63 +1,122 @@
-<div class="profile-page">
-  <header class="profile-header">
-    <h1>Información personal</h1>
-    <p>Consulta los datos registrados en tu cuenta.</p>
+<div class="mx-auto w-full max-w-[980px] flex flex-col gap-4 px-4 pb-6 font-sans">
+  
+  <!-- Header Section -->
+  <header class="p-[clamp(1.3rem,3vw,1.75rem)] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-colors">
+    <div class="flex flex-col gap-1.5">
+      <p class="text-[0.72rem] tracking-[0.35em] uppercase text-slate-500 dark:text-slate-400 font-bold">Mi cuenta</p>
+      <h1 class="m-0 text-[clamp(1.6rem,3vw,2.1rem)] font-semibold text-slate-900 dark:text-white leading-tight tracking-tight">Perfil de atleta</h1>
+      <p class="m-0 text-[0.95rem] text-slate-500 dark:text-slate-400 leading-snug">Información personal y estado físico.</p>
+    </div>
+    
+    <!-- Avatar Placeholder using Primary Color -->
+    <div *ngIf="profile" class="h-12 w-12 rounded-full flex items-center justify-center text-lg font-bold bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))] border border-[rgb(var(--color-primary))]/20">
+      {{ getInitials(profile.givenName + ' ' + profile.familyName) }}
+    </div>
   </header>
 
-  <div class="profile-error" *ngIf="errorMessage" role="status" aria-live="polite">
+  <!-- Error State -->
+  <div *ngIf="errorMessage" class="w-full max-w-[720px] border border-red-200 bg-red-50 text-red-700 p-4 rounded-[18px] dark:bg-red-900/20 dark:border-red-800 dark:text-red-300" role="alert">
     {{ errorMessage }}
   </div>
 
-  <div
-    class="profile-loading"
-    *ngIf="isLoading"
-    role="status"
-    aria-live="polite"
-    [attr.aria-busy]="isLoading">
-    <div class="app-spinner" aria-hidden="true"></div>
-    <p>Cargando tu perfil...</p>
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="w-full max-w-[680px] border border-[rgb(var(--color-primary))]/30 bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))] p-4 rounded-[18px] flex flex-col items-center gap-2.5" role="status">
+    <div class="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></div>
+    <p class="font-semibold text-sm tracking-wide">CARGANDO PERFIL...</p>
   </div>
 
-  <section *ngIf="!isLoading && !errorMessage">
-    <article class="client-card profile-card" *ngIf="hasProfileData; else emptyState">
-      <div class="profile-row" *ngIf="displayName">
-        <span class="profile-label">Nombre</span>
-        <span class="profile-value">{{ displayName }}</span>
-      </div>
+  <!-- Profile Content -->
+  <section *ngIf="!isLoading && !errorMessage && profile" class="flex flex-col gap-6">
+    
+    <!-- Personal Info Panel -->
+    <div class="p-[clamp(1rem,2vw,1.5rem)] rounded-[18px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+        <span class="material-symbols-outlined text-[rgb(var(--color-primary))]">person</span>
+        Información Personal
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- First Name -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Nombre</label>
+          <input readonly [value]="profile.givenName"
+                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        </div>
 
-      <div class="profile-row" *ngIf="profile?.email">
-        <span class="profile-label">Email</span>
-        <span class="profile-value">{{ profile?.email }}</span>
-      </div>
+        <!-- Last Name -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Apellido</label>
+          <input readonly [value]="profile.familyName"
+                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        </div>
 
-      <div class="profile-row" *ngIf="displayAge !== null">
-        <span class="profile-label">Edad</span>
-        <span class="profile-value">{{ displayAge }} años</span>
-      </div>
+        <!-- Email -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</label>
+          <input readonly [value]="profile.email"
+                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        </div>
 
-      <div class="profile-row" *ngIf="injuriesList.length || injuriesText">
-        <span class="profile-label">Lesiones</span>
-        <div class="profile-value">
-          <div class="injury-chips" *ngIf="injuriesList.length; else injuriesTextBlock">
-            <span class="client-chip" *ngFor="let injury of injuriesList">{{ injury }}</span>
+        <!-- Telephone -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Teléfono</label>
+          <input readonly [value]="profile.telephone"
+                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        </div>
+
+        <!-- Age (Calculated) -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Edad</label>
+          <input readonly [value]="getAge(profile.dateOfBirth)"
+                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        </div>
+
+        <!-- Gender -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Género</label>
+          <input readonly [value]="profile.gender"
+                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        </div>
+
+        <!-- Trainer -->
+        <div class="flex flex-col gap-1.5 md:col-span-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Entrenador</label>
+          <div class="relative">
+            <input readonly [value]="profile.trainerName || 'No asignado'"
+                   class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
           </div>
-          <ng-template #injuriesTextBlock>
-            <span>{{ injuriesText }}</span>
-          </ng-template>
+        </div>
+
+        <!-- Notes -->
+        <div class="flex flex-col gap-1.5 md:col-span-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Notas</label>
+          <textarea readonly rows="3"
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white resize-none cursor-default">{{ profile.notes }}</textarea>
         </div>
       </div>
+    </div>
 
-      <div class="profile-row" *ngIf="trainerName">
-        <span class="profile-label">Entrenador</span>
-        <span class="profile-value">{{ trainerName }}</span>
-      </div>
-    </article>
+    <!-- Physical Status Panel -->
+    <div class="p-[clamp(1rem,2vw,1.5rem)] rounded-[18px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+        <span class="material-symbols-outlined text-[rgb(var(--color-primary))]">medical_services</span>
+        Estado Físico
+      </h2>
 
-    <ng-template #emptyState>
-      <div class="profile-empty">
-        <div class="profile-icon">👤</div>
-        <p>Aún no tenemos información suficiente para mostrar tu perfil.</p>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Lesiones o condiciones</label>
+        <textarea readonly rows="3"
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white resize-none cursor-default">{{ formatInjuries(profile.injuries) }}</textarea>
+        <p class="text-xs text-slate-400 mt-1">
+          * Para actualizar esta información, contacta a tu entrenador directamente.
+        </p>
       </div>
-    </ng-template>
+    </div>
+
   </section>
 </div>
+
+<!--
+[PROMPT_SUGGESTION]Implementar la vista de detalle de sesión (ClientSessionExercisesComponent) con la lista de ejercicios y soporte para superseries.[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]Crear un servicio mock para ClientDataService que permita probar la UI sin backend.[/PROMPT_SUGGESTION]
+-->

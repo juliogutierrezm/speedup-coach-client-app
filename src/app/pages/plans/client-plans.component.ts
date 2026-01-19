@@ -5,12 +5,6 @@ import { Subject, of } from 'rxjs';
 import { catchError, finalize, takeUntil } from 'rxjs/operators';
 import { ClientDataService, WorkoutPlan } from '../../services/client-data.service';
 
-/**
- * Purpose: Render the client plans list view with real data.
- * Input: none. Output: UI rendering and navigation.
- * Error handling: shows inline error messages on load failures and safe empty states.
- * Standards Check: SRP OK | DRY OK | Tests Pending.
- */
 @Component({
   selector: 'app-client-plans',
   standalone: true,
@@ -18,13 +12,15 @@ import { ClientDataService, WorkoutPlan } from '../../services/client-data.servi
     CommonModule
   ],
   templateUrl: './client-plans.component.html',
-  styleUrls: ['./client-plans.component.scss'],
+ styleUrls: ['./client-plans.component.scss']
+  ,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClientPlansComponent implements OnInit, OnDestroy {
   plans: WorkoutPlan[] = [];
   isLoading = false;
   errorMessage = '';
+  private planOrderMap = new Map<string, number>();
 
   private destroy$ = new Subject<void>();
 
@@ -70,11 +66,103 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Purpose: provide a stable trackBy key for plan rendering.
-   * Input: index and plan. Output: string key.
-   * Error handling: falls back to index when identifiers are missing.
+   * Purpose: return the plan counter based on its position in the plans list.
+   * Input: WorkoutPlan. Output: number.
+   * Error handling: returns 0 when plan is not found in the list.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
+  getPlanCounter(plan: WorkoutPlan): number {
+    const planKey = this.getPlanKey(plan);
+    if (!planKey) {
+      return 0;
+    }
+    return this.planOrderMap.get(planKey) ?? 0;
+  }
+
+  /**
+   * Purpose: return accent border style for plan cards based on objective.
+   * Input: WorkoutPlan. Output: string CSS style.
+   * Error handling: returns default primary color border.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getAccentBorder(plan: WorkoutPlan): string {
+    const colors: Record<string, string> = {
+      'Ganar masa muscular': '#10b981',
+      'Flexibilidad': '#10b981',
+      'Pérdida de peso': '#f97316',
+      'Fuerza': '#a855f7',
+      'default': 'rgb(var(--color-primary))'
+    };
+    const color = colors[plan?.objective || ''] || colors.default;
+    return `4px solid ${color}`;
+  }
+
+  /**
+   * Purpose: return badge text based on plan objective.
+   * Input: WorkoutPlan. Output: string | null.
+   * Error handling: returns null for unknown objectives.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getPlanBadge(plan: WorkoutPlan): string | null {
+    const badges: Record<string, string> = {
+      'Ganar masa muscular': 'Más popular',
+      'Flexibilidad': 'Recuperación',
+      'Pérdida de peso': 'Alta intensidad',
+      'Fuerza': 'Fuerza'
+    };
+    return badges[plan?.objective || ''] || null;
+  }
+
+  /**
+   * Purpose: return Tailwind classes for badge styling based on objective.
+   * Input: WorkoutPlan. Output: string.
+   * Error handling: returns default primary badge classes.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getBadgeClasses(plan: WorkoutPlan): string {
+    const classes: Record<string, string> = {
+      'Ganar masa muscular': 'bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))]',
+      'Flexibilidad': 'bg-emerald-500/10 text-emerald-500',
+      'Pérdida de peso': 'bg-orange-500/10 text-orange-500',
+      'Fuerza': 'bg-purple-500/10 text-purple-500',
+      'default': 'bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))]'
+    };
+    return classes[plan?.objective || ''] || classes.default;
+  }
+
+  /**
+   * Purpose: return Tailwind classes for icon background based on objective.
+   * Input: WorkoutPlan. Output: string.
+   * Error handling: returns default primary background.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getIconBgClasses(plan: WorkoutPlan): string {
+    const classes: Record<string, string> = {
+      'Ganar masa muscular': 'bg-[rgb(var(--color-primary))]/10',
+      'Flexibilidad': 'bg-emerald-500/10',
+      'Pérdida de peso': 'bg-orange-500/10',
+      'Fuerza': 'bg-purple-500/10',
+      'default': 'bg-[rgb(var(--color-primary))]/10'
+    };
+    return classes[plan?.objective || ''] || classes.default;
+  }
+
+  /**
+   * Purpose: return Material Symbols icon name based on plan objective.
+   * Input: WorkoutPlan. Output: string.
+   * Error handling: returns default fitness_center icon.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  getPlanIcon(plan: WorkoutPlan): string {
+    const icons: Record<string, string> = {
+      'Ganar masa muscular': 'fitness_center',
+      'Flexibilidad': 'self_improvement',
+      'Pérdida de peso': 'bolt',
+      'Fuerza': 'exercise'
+    };
+    return icons[plan?.objective || ''] || 'fitness_center';
+  }
+
   /**
    * Purpose: provide a stable trackBy key for plan rendering.
    * Input: index and plan. Output: string key.
@@ -110,7 +198,8 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe(plans => {
-        this.plans = plans ?? [];
+        this.plans = this.sortPlansByCreatedAt(plans ?? []);
+        this.planOrderMap = this.buildPlanOrderMap(this.plans);
         this.cdr.markForCheck();
       });
   }
@@ -123,11 +212,11 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
    */
   openPlan(plan: WorkoutPlan): void {
     const planId = this.getPlanKey(plan);
-        if (!planId) {
-          this.errorMessage = 'No pudimos abrir este plan.';
-          this.cdr.markForCheck();
-          return;
-        }
+    if (!planId) {
+      this.errorMessage = 'No pudimos identificar este plan.';
+      this.cdr.markForCheck();
+      return;
+    }
 
     this.router.navigate(['/plans', planId]);
   }
@@ -164,6 +253,53 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
    */
   private getPlanKey(plan: WorkoutPlan): string | null {
     return plan?.planId || plan?.SK || null;
+  }
+
+  /**
+   * Purpose: sort plans by createdAt (desc) with safe fallbacks.
+   * Input: WorkoutPlan[]. Output: WorkoutPlan[] sorted copy.
+   * Error handling: treats missing dates as 0 epoch.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private sortPlansByCreatedAt(plans: WorkoutPlan[]): WorkoutPlan[] {
+    return [...plans].sort((a, b) => {
+      const dateA = this.getPlanSortTime(a);
+      const dateB = this.getPlanSortTime(b);
+      return dateB - dateA;
+    });
+  }
+
+  /**
+   * Purpose: build a deterministic ordering map for plan numbering.
+   * Input: ordered WorkoutPlan[]. Output: Map<planKey, order>.
+   * Error handling: skips plans without a stable key.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private buildPlanOrderMap(plans: WorkoutPlan[]): Map<string, number> {
+    const map = new Map<string, number>();
+    const total = plans.length;
+    plans.forEach((plan, index) => {
+      const key = this.getPlanKey(plan);
+      if (key) {
+        map.set(key, total - index);
+      }
+    });
+    return map;
+  }
+
+  /**
+   * Purpose: resolve a sort timestamp for plan ordering.
+   * Input: WorkoutPlan. Output: number (ms).
+   * Error handling: falls back to 0 for invalid dates.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private getPlanSortTime(plan: WorkoutPlan): number {
+    const createdAt = plan?.createdAt ? Date.parse(plan.createdAt) : NaN;
+    if (Number.isFinite(createdAt)) {
+      return createdAt;
+    }
+    const date = plan?.date ? Date.parse(plan.date) : NaN;
+    return Number.isFinite(date) ? date : 0;
   }
 
   /**

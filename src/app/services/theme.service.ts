@@ -87,11 +87,11 @@ export class ThemeService {
 
   /**
    * Purpose: apply tenant theme tokens globally for client UI rendering.
-   * Input: TenantTheme payload. Output: void (side effects on documentElement).
+   * Input: TenantTheme payload (or null for defaults). Output: void (side effects on documentElement).
    * Error handling: no-op on non-browser platforms; logs unexpected failures.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
-  applyTheme(theme: TenantTheme): void {
+  applyTheme(theme?: ThemeConfig | TenantTheme | null): void {
     if (!this.isBrowser || typeof document === 'undefined') {
       return;
     }
@@ -205,10 +205,18 @@ export class ThemeService {
           subscriber.complete();
         },
         error: (error) => {
+          const cached = this.themeSubject.value;
+          if (cached) {
+            console.warn('[ThemeService] loadTheme failed; using cached theme.', { error });
+            subscriber.next(cached);
+            subscriber.complete();
+            return;
+          }
           // If theme not configured, use defaults
           console.log('Using default theme:', error);
-          this.themeSubject.next(this.defaultTenantTheme);
-          subscriber.next(this.defaultTenantTheme);
+          const fallback = this.getDefaultTheme();
+          this.themeSubject.next(fallback);
+          subscriber.next(fallback);
           subscriber.complete();
         }
       });
@@ -216,20 +224,23 @@ export class ThemeService {
   }
 
   /**
-   * Get current theme value (useful for synchronous access)
+   * Purpose: return the current theme snapshot when available.
+   * Input: none. Output: ThemeConfig | null.
+   * Error handling: returns null when unset.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
-  getCurrentTheme(): ThemeConfig {
-    return this.themeSubject.value || this.defaultTenantTheme;
+  getCurrentTheme(): ThemeConfig | null {
+    return this.themeSubject.value;
   }
 
   /**
    * Purpose: return the latest tenant theme snapshot for client views.
-   * Input: none. Output: TenantTheme.
-   * Error handling: falls back to defaults when no theme is cached.
+   * Input: none. Output: TenantTheme | null.
+   * Error handling: returns null when no theme is cached.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
-  getCurrentTenantTheme(): TenantTheme {
-    return this.tenantThemeSubject.value || this.defaultTenantTheme;
+  getCurrentTenantTheme(): TenantTheme | null {
+    return this.tenantThemeSubject.value;
   }
 
   /**
@@ -251,8 +262,8 @@ export class ThemeService {
 
   /**
    * Purpose: normalize tenant theme payload to ensure required fields exist.
-   * Input: raw theme config. Output: TenantTheme with defaults applied.
-   * Error handling: returns defaults when raw theme is nullish.
+   * Input: raw theme config. Output: TenantTheme resolved for client usage.
+   * Error handling: returns defaults only when raw theme is nullish.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
   private normalizeTenantTheme(config?: ThemeConfig | TenantTheme | null): TenantTheme {
@@ -260,21 +271,27 @@ export class ThemeService {
       return this.getDefaultTenantTheme();
     }
 
-    const fallback = this.getDefaultTenantTheme();
-    const backgroundMode = config.backgroundMode === 'light' ? 'light' : 'dark';
+    const backgroundMode =
+      config.backgroundMode === 'light' || config.backgroundMode === 'dark'
+        ? config.backgroundMode
+        : 'darkMode' in config && typeof (config as ThemeConfig).darkMode === 'boolean'
+          ? (config as ThemeConfig).darkMode
+            ? 'dark'
+            : 'light'
+          : 'dark';
     const typography = 'typography' in config ? (config as ThemeConfig).typography : undefined;
-    const fontFamily = config.fontFamily || typography || fallback.fontFamily;
+    const fontFamily = config.fontFamily || typography || '';
 
     return {
       tenantId: config.tenantId,
       tenantType: config.tenantType,
-      primaryColor: config.primaryColor || fallback.primaryColor,
-      accentColor: config.accentColor || fallback.accentColor,
+      primaryColor: config.primaryColor || '',
+      accentColor: config.accentColor || '',
       backgroundMode,
       fontFamily,
-      appName: config.appName || fallback.appName,
-      tagline: config.tagline || fallback.tagline,
-      logoUrl: config.logoUrl || fallback.logoUrl
+      appName: config.appName || '',
+      tagline: config.tagline || '',
+      logoUrl: config.logoUrl || ''
     };
   }
 }

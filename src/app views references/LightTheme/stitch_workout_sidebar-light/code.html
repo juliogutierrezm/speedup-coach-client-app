@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Light Sidebar Glass Menu</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-sidebar {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-right: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .dark .glass-sidebar {
+            background: rgba(16, 25, 34, 0.85);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .scrim {
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(4px);
+        }
+        .active-indicator::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 25%;
+            height: 50%;
+            width: 4px;
+            background-color: #137fec;
+            border-radius: 0 4px 4px 0;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#0d141b] dark:text-slate-100 overflow-hidden">
+<!-- App Background Mockup -->
+<div class="fixed inset-0 z-0 flex flex-col p-6">
+<div class="h-48 w-full bg-gradient-to-br from-primary/40 to-purple-400/30 rounded-3xl mb-6"></div>
+<div class="space-y-4">
+<div class="h-4 w-3/4 bg-slate-200 dark:bg-slate-800 rounded-full"></div>
+<div class="h-4 w-1/2 bg-slate-200 dark:bg-slate-800 rounded-full opacity-60"></div>
+<div class="grid grid-cols-2 gap-4 pt-4">
+<div class="h-32 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
+<div class="h-32 bg-slate-200 dark:bg-slate-800 rounded-2xl"></div>
+</div>
+</div>
+</div>
+<!-- Scrim / Overlay -->
+<div class="fixed inset-0 z-40 scrim"></div>
+<!-- Navigation Drawer (iOS Liquid Glass Aesthetic) -->
+<div class="fixed inset-y-0 left-0 z-50 w-[80%] max-w-[320px] flex flex-col glass-sidebar shadow-2xl">
+<!-- Sidebar Header -->
+<div class="px-6 pt-14 pb-8 flex flex-col gap-4">
+<div class="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-blue-400 p-[2px] shadow-lg shadow-primary/20">
+<div class="w-full h-full bg-white dark:bg-slate-900 rounded-[14px] flex items-center justify-center overflow-hidden">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="Modern fitness user profile avatar circular" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPWLKzBnpqXQJdVmAWLtNdtndMkKBY-EYSZGDmbq5XtNEYsFxZKTWwbt_4w4CLck_KfwlLAPdiuJ_52Ol7f74jGLDxxxLK9S_Ldk7CK151j6yn_T0sgLNxK_3ksi_cWVZxDFifJhBTF95FssCxVGg3yL9BpNSYs82gwT4CXE4nYFOTCdMj3pfOldrK32QqooDWbSFku5_O14KeAUodlwv_gUzaWWyMEILkqmyM0QdfuKa0FG2YNGbJfBPKhYZ09gVbg-Xu44NTKdAz"/>
+</div>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+</div>
+<div>
+<h2 class="text-xl font-bold tracking-tight text-[#0d141b] dark:text-white">Alex Johnson</h2>
+<p class="text-sm font-medium text-primary dark:text-primary/80">Pro Member • Level 24</p>
+</div>
+</div>
+<!-- Menu Content -->
+<nav class="flex-1 px-4 space-y-1">
+<!-- Group 1: Training -->
+<div class="mb-6">
+<p class="px-4 mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Training</p>
+<ul class="space-y-1">
+<li class="relative group">
+<a class="active-indicator flex h-12 items-center gap-4 rounded-xl px-4 bg-white/60 dark:bg-white/5 shadow-sm" href="#">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1">calendar_today</span>
+<span class="text-[15px] font-semibold text-[#0d141b] dark:text-white flex-1">My Plans</span>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">2</span>
+</a>
+</li>
+<li class="group">
+<a class="flex h-12 items-center gap-4 rounded-xl px-4 transition-all hover:bg-white/40 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary">history</span>
+<span class="text-[15px] font-medium text-slate-700 dark:text-slate-300 flex-1">Workout History</span>
+<span class="material-symbols-outlined text-slate-300 text-sm">chevron_right</span>
+</a>
+</li>
+<li class="group">
+<a class="flex h-12 items-center gap-4 rounded-xl px-4 transition-all hover:bg-white/40 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary">monitoring</span>
+<span class="text-[15px] font-medium text-slate-700 dark:text-slate-300 flex-1">Progress Stats</span>
+<span class="material-symbols-outlined text-slate-300 text-sm">chevron_right</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Group 2: Discovery -->
+<div class="mb-6">
+<p class="px-4 mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Discovery</p>
+<ul class="space-y-1">
+<li class="group">
+<a class="flex h-12 items-center gap-4 rounded-xl px-4 transition-all hover:bg-white/40 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary">distance</span>
+<span class="text-[15px] font-medium text-slate-700 dark:text-slate-300 flex-1">Gym Location</span>
+<span class="material-symbols-outlined text-slate-300 text-sm">chevron_right</span>
+</a>
+</li>
+<li class="group">
+<a class="flex h-12 items-center gap-4 rounded-xl px-4 transition-all hover:bg-white/40 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary">diversity_3</span>
+<span class="text-[15px] font-medium text-slate-700 dark:text-slate-300 flex-1">Community</span>
+<span class="material-symbols-outlined text-slate-300 text-sm">chevron_right</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Group 3: App -->
+<div>
+<p class="px-4 mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">System</p>
+<ul class="space-y-1">
+<li class="group">
+<a class="flex h-12 items-center gap-4 rounded-xl px-4 transition-all hover:bg-white/40 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary">settings</span>
+<span class="text-[15px] font-medium text-slate-700 dark:text-slate-300 flex-1">Settings</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Sidebar Footer -->
+<div class="p-6 mt-auto">
+<button class="flex w-full items-center justify-center gap-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-600 rounded-2xl transition-colors border border-red-500/20">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span class="text-sm font-bold">Log Out</span>
+</button>
+<div class="mt-4 flex flex-col items-center">
+<p class="text-[10px] font-medium text-slate-400 uppercase tracking-tighter">Liquid Gym v2.4.1</p>
+</div>
+</div>
+<!-- iOS Bottom Handle -->
+<div class="flex h-6 w-full items-center justify-center pb-2">
+<div class="h-1 w-12 rounded-full bg-slate-300/50 dark:bg-slate-700/50"></div>
+</div>
+</div>
+</body></html>

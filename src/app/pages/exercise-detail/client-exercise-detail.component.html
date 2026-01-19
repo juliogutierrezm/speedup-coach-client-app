@@ -1,8 +1,15 @@
 <div class="exercise-detail-page">
+  <!-- HEADER -->
   <header class="exercise-header">
-    <button class="nav-back" type="button" (click)="goBack()" aria-label="Volver a la sesión" [disabled]="isLoading">
-      ←
+    <button
+      class="nav-back"
+      type="button"
+      (click)="goBack()"
+      aria-label="Volver a la sesión"
+      [disabled]="isLoading">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"><path fill="currentColor" d="M11.354 6.646a.5.5 0 0 1 0 .708L7.207 11.5H18a.5.5 0 0 1 0 1H7.207l4.147 4.146a.5.5 0 0 1-.708.708l-5-5a.5.5 0 0 1 0-.708l5-5a.5.5 0 0 1 .708 0"/></svg>
     </button>
+
     <div class="exercise-header-text">
       <p class="exercise-eyebrow">{{ planTitle }}</p>
       <h1 class="exercise-name">{{ getExerciseTitle(exercise) }}</h1>
@@ -10,60 +17,84 @@
     </div>
   </header>
 
-  <div class="exercise-error" *ngIf="errorMessage" role="status" aria-live="polite">
+  <!-- STATES -->
+  <div class="exercise-error" *ngIf="errorMessage">
     {{ errorMessage }}
   </div>
 
-  <div
-    class="exercise-loading"
-    *ngIf="isLoading"
-    role="status"
-    aria-live="polite"
-    [attr.aria-busy]="isLoading">
-    <div class="app-spinner" aria-hidden="true"></div>
-    <p>Cargando el ejercicio...</p>
+  <div class="exercise-loading" *ngIf="isLoading">
+    <div class="app-spinner"></div>
+    <p>Cargando el ejercicio…</p>
   </div>
 
-  <section class="exercise-detail" *ngIf="!isLoading && !exerciseMissing && !errorMessage">
+  <!-- CONTENT -->
+  <section
+    class="exercise-detail"
+    *ngIf="!isLoading && !exerciseMissing && !errorMessage">
+
+    <!-- VIDEO -->
     <div class="exercise-media">
-    <video
-      *ngIf="previewUrl; else videoFallback"
-      controls
-      playsinline
-      preload="metadata"
-      [attr.poster]="exercise?.thumbnail || ''"
-      [attr.title]="getExerciseTitle(exercise)">
-      <source [src]="previewUrl" type="video/mp4" />
-      Tu navegador no soporta reproducir video.
-    </video>
-    <ng-template #videoFallback>
-      <div class="thumb-placeholder">Sin video</div>
-    </ng-template>
-  </div>
+      <video
+        *ngIf="previewUrl; else noVideo"
+        controls
+        playsinline
+        preload="metadata"
+        [attr.poster]="exercise?.thumbnail || ''">
+        <source [src]="previewUrl" type="video/mp4" />
+      </video>
 
-    <div class="exercise-content">
-      <p class="exercise-description">{{ descriptionText }}</p>
-      <div class="exercise-kpis">
-        <span *ngIf="primaryMuscle">Principal: {{ primaryMuscle }}</span>
-        <span *ngIf="secondaryMuscles.length">Secundarios: {{ secondaryMuscles.join(', ') }}</span>
+      <ng-template #noVideo>
+        <div class="thumb-placeholder">Sin video</div>
+      </ng-template>
+    </div>
+
+    <!-- EXECUTION METRICS -->
+    <div class="exercise-execution">
+      <div class="execution-item">
+        <span class="execution-label">Series</span>
+        <span class="execution-value">{{ exercise?.sets }}</span>
       </div>
-      <div class="exercise-tips" *ngIf="tips.length">
-        <h2>Consejos</h2>
-        <ul>
-          <li *ngFor="let tip of tips">{{ tip }}</li>
-        </ul>
+
+      <div class="execution-item">
+        <span class="execution-label">Reps</span>
+        <span class="execution-value">{{ exercise?.reps }}</span>
       </div>
-      <div class="exercise-tips" *ngIf="mistakes.length">
-        <h2>Errores comunes</h2>
-        <ul>
-          <li *ngFor="let mistake of mistakes">{{ mistake }}</li>
-        </ul>
+
+      <div class="execution-item">
+        <span class="execution-label">Descanso</span>
+        <span class="execution-value">{{ exercise?.rest }}s</span>
+      </div>
+
+      <div class="execution-item" *ngIf="exercise?.weight">
+        <span class="execution-label">Peso</span>
+        <span class="execution-value">{{ exercise?.weight }}</span>
       </div>
     </div>
+
+    <!-- ACCORDIONS -->
+    <details class="exercise-accordion" *ngIf="descriptionText">
+      <summary>Descripción</summary>
+      <p>{{ descriptionText }}</p>
+    </details>
+
+    <details class="exercise-accordion" *ngIf="tips.length">
+      <summary>Consejos</summary>
+      <ul>
+        <li *ngFor="let tip of tips">{{ tip }}</li>
+      </ul>
+    </details>
+
+    <details class="exercise-accordion" *ngIf="mistakes.length">
+      <summary>Errores comunes</summary>
+      <ul>
+        <li *ngFor="let mistake of mistakes">{{ mistake }}</li>
+      </ul>
+    </details>
   </section>
 
-  <div class="exercise-empty" *ngIf="!isLoading && exerciseMissing && !errorMessage">
+  <!-- EMPTY -->
+  <div class="exercise-empty" *ngIf="exerciseMissing && !isLoading">
     <p>No encontramos este ejercicio.</p>
-    <button class="client-button" type="button" (click)="goBack()">Volver</button>
+    <button class="client-button" (click)="goBack()">Volver</button>
   </div>
 </div>
