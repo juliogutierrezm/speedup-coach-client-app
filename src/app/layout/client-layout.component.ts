@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, On
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { from, of, Subject } from 'rxjs';
-import { catchError, filter, finalize, takeUntil, tap } from 'rxjs/operators';
+import { catchError, filter, finalize, take, takeUntil, tap } from 'rxjs/operators';
 import { ThemeService, TenantTheme } from '../services/theme.service';
 import { AuthService } from '../services/auth.service';
 import { ClientDataService } from '../services/client-data.service';
@@ -42,7 +42,21 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.loadTenantTheme();
+    // Wait for auth to be fully initialized before loading theme
+    this.authService.authState$
+      .pipe(
+        filter(state => state.authenticated),
+        take(1),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        this.loadTenantTheme();
+      });
+
+    // If already authenticated, load immediately
+    if (this.authService.isAuthenticatedSync()) {
+      this.loadTenantTheme();
+    }
   }
 
   ngOnDestroy(): void {

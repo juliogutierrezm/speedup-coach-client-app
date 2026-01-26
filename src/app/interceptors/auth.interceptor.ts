@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { switchMap, catchError } from 'rxjs/operators';
+import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
@@ -23,32 +23,36 @@ export class AuthInterceptor implements HttpInterceptor {
       return next.handle(req);
     }
 
-    // Usuario no autenticado
+    // Usuario no autenticado - BLOQUEAR request
     if (!this.authService.isAuthenticatedSync()) {
-      try { this.router.navigate(['/login']); } catch {}
-      return next.handle(req);
+      this.authService.signOut();
+      this.router.navigate(['/login']);
+      return throwError(() => new Error('Unauthorized'));
     }
 
-    // 🔑 SIEMPRE adjuntar ID token
-    return this.authService.getIdToken().pipe(
+    return this.authService.getAccessToken().pipe(
       switchMap(token => {
-        if (!token) {
-          return next.handle(req);
-        }
+        const authReq = token
+          ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+          : req;
 
-        const authReq = req.clone({
-          setHeaders: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        return next.handle(authReq);
+        return next.handle(authReq).pipe(
+          catchError(err => this.handleApiError(err))
+        );
       })
     );
   }
 
   private isPublicEndpoint(url: string): boolean {
     return ['/assets', '/health', '/public'].some(p => url.includes(p));
+  }
+
+  private handleApiError(err: any): Observable<never> {
+    if (err instanceof HttpErrorResponse && (err.status === 401 || err.status === 403)) {
+      this.authService.signOut();
+      this.router.navigate(['/login']);
+    }
+    return throwError(() => err);
   }
 }
 

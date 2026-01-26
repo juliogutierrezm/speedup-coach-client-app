@@ -5,18 +5,33 @@
       <p>Tu panel de entrenamiento personalizado</p>
     </div>
 
-    <div class="actions" *ngIf="!loading">
-      <button type="button" class="primary" (click)="signInWithHostedUI()">
-        Iniciar sesión
-      </button>
-      <button type="button" class="secondary" (click)="signUpWithHostedUI()">
-        Crear cuenta
-      </button>
-    </div>
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <label class="field">
+        <span>Correo electrónico</span>
+        <input type="email" formControlName="email" placeholder="tu@correo.com" />
+        <small class="error" *ngIf="form.controls.email.touched && form.controls.email.invalid">
+          Ingresa un correo válido.
+        </small>
+      </label>
 
-    <div class="loading" *ngIf="loading">
-      <div class="app-spinner" aria-hidden="true"></div>
-      <p>Redirigiendo a tu proveedor de identidad...</p>
-    </div>
+      <label class="field">
+        <span>Contraseña</span>
+        <input type="password" formControlName="password" placeholder="••••••••" />
+        <small class="error" *ngIf="form.controls.password.touched && form.controls.password.invalid">
+          La contraseña es obligatoria.
+        </small>
+      </label>
+
+      <button class="primary" type="submit" [disabled]="loading">
+        <span *ngIf="!loading">Iniciar sesión</span>
+        <span *ngIf="loading">Iniciando...</span>
+      </button>
+
+      <button class="link" type="button" (click)="goToForgotPassword()" [disabled]="loading">
+        ¿Olvidaste tu contraseña?
+      </button>
+
+      <div class="error-banner" *ngIf="error">{{ error }}</div>
+    </form>
   </div>
 </div>

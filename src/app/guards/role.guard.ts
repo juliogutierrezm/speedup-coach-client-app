@@ -32,8 +32,10 @@ export class RoleGuard implements CanActivate {
           return false;
         }
 
-        if (!requiredRoles.includes(user.role)) {
-          this.router.navigate(['/unauthorized']);
+        const isClientGroup = this.authService.hasClientGroup();
+        if (!requiredRoles.includes(user.role) || !isClientGroup) {
+          this.authService.signOut();
+          this.router.navigate(['/login'], { state: { reason: 'unauthorized' } });
           return false;
         }
 

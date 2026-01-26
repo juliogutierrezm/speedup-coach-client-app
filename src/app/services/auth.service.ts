@@ -1,13 +1,21 @@
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, Observable, from, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { Amplify } from 'aws-amplify';
-import { fetchAuthSession, signOut, getCurrentUser, signInWithRedirect } from 'aws-amplify/auth';
+import {
+  confirmResetPassword,
+  confirmSignIn,
+  fetchAuthSession,
+  getCurrentUser,
+  resetPassword,
+  signIn,
+  signOut
+} from 'aws-amplify/auth';
 import { awsExports } from '../../aws-exports';
 import { ThemeService } from './theme.service';
 
-// Configure Amplify
+// Configure Amplify once with the client app settings
 Amplify.configure(awsExports);
 
 export interface UserProfile {
@@ -27,16 +35,36 @@ export enum UserRole {
   CLIENT = 'client'
 }
 
+export interface AuthState {
+  authenticated: boolean;
+  claims: any | null;
+  groups: string[];
+  pendingChallenge?: 'NEW_PASSWORD_REQUIRED' | null;
+  pendingEmail?: string | null;
+}
+
+export interface AuthError extends Error {
+  code: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private currentUserSubject = new BehaviorSubject<UserProfile | null>(null);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private authStateSubject = new BehaviorSubject<AuthState>({
+    authenticated: false,
+    claims: null,
+    groups: [],
+    pendingChallenge: null,
+    pendingEmail: null
+  });
   private readonly isBrowser: boolean;
 
   public currentUser$ = this.currentUserSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  public authState$ = this.authStateSubject.asObservable();
 
   constructor(
     @Inject(PLATFORM_ID) platformId: Object,
@@ -44,42 +72,41 @@ export class AuthService {
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
     if (this.isBrowser) {
+      this.logConfig();
       this.checkAuthState();
     }
   }
 
-  async signInWithRedirect(): Promise<void> {
+  async checkAuthState(): Promise<void> {
+    if (!this.isBrowser) {
+      return;
+    }
+
     try {
-      if (!this.isBrowser || typeof window === 'undefined') {
-        console.warn('signInWithRedirect called on server; ignoring.');
+      const session = await fetchAuthSession();
+      const hasTokens = !!session.tokens?.idToken;
+
+      if (!hasTokens) {
+        this.resetState();
         return;
       }
-      await signInWithRedirect();
-    } catch (error) {
-      console.error('Error signing in with redirect:', error);
-    }
-  }
 
-  async checkAuthState(): Promise<void> {
-    try {
-      if (!this.isBrowser) { return; }
       const user = await getCurrentUser();
-      const session = await fetchAuthSession();
-      
-      if (user && session.tokens) {
-        const userProfile = await this.buildUserProfile(user, session);
-        this.currentUserSubject.next(userProfile);
-        this.isAuthenticatedSubject.next(true);
-      } else {
-        this.currentUserSubject.next(null);
-        this.isAuthenticatedSubject.next(false);
-        this.applyDefaultThemeWhenSignedOut();
-      }
+      const userProfile = await this.buildUserProfile(user, session);
+      const claims = session.tokens?.idToken?.payload ?? null;
+      const groups = this.extractGroups(claims);
+
+      this.currentUserSubject.next(userProfile);
+      this.isAuthenticatedSubject.next(true);
+      this.authStateSubject.next({
+        authenticated: true,
+        claims,
+        groups,
+        pendingChallenge: null,
+        pendingEmail: null
+      });
     } catch (error) {
-      console.log('User not authenticated:', error);
-      this.currentUserSubject.next(null);
-      this.isAuthenticatedSubject.next(false);
-      this.applyDefaultThemeWhenSignedOut();
+      this.resetState();
     }
   }
 
@@ -111,6 +138,14 @@ export class AuthService {
     };
   }
 
+  private extractGroups(idPayload: any): string[] {
+    const groups = idPayload?.['cognito:groups'];
+    if (Array.isArray(groups)) {
+      return groups;
+    }
+    return [];
+  }
+
   private extractUserRole(idPayload: any, accessPayload: any): UserRole {
     const norm = (v: any) => (typeof v === 'string' ? v.toLowerCase() : v);
 
@@ -134,73 +169,180 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  // Synchronous read for guards/callback logic to avoid flicker
+  // Synchronous read for guards/interceptor
   isAuthenticatedSync(): boolean {
-    return this.isAuthenticatedSubject.value;
-  }
-
-  getCurrentUserId(): string | null {
-    return this.currentUserSubject.value?.id || null;
+    return this.authStateSubject.value.authenticated;
   }
 
   getCurrentUserRole(): UserRole | null {
     return this.currentUserSubject.value?.role || null;
   }
 
-  getCurrentCompanyId(): string | null {
-    return this.currentUserSubject.value?.companyId || null;
-  }
-
-  isAdmin(): boolean {
-    return this.getCurrentUserRole() === UserRole.ADMIN;
-  }
-
-  isTrainer(): boolean {
-    return this.getCurrentUserRole() === UserRole.TRAINER;
-  }
-
-  isClient(): boolean {
-    return this.getCurrentUserRole() === UserRole.CLIENT;
-  }
-
-  canAccessUserData(targetUserId: string): boolean {
-    const currentUser = this.getCurrentUser();
-    if (!currentUser) return false;
-
-    // Admin can access all data
-    if (currentUser.role === UserRole.ADMIN) return true;
-
-    // Users can access their own data
-    if (currentUser.id === targetUserId) return true;
-
-    // Trainers can access their clients' data
-    if (currentUser.role === UserRole.TRAINER && 
-        currentUser.trainerIds?.includes(targetUserId)) {
-      return true;
+  async signIn(email: string, password: string): Promise<'SUCCESS' | 'NEW_PASSWORD_REQUIRED'> {
+    if (!this.isBrowser) {
+      throw this.buildError('PLATFORM', 'Auth disponible solo en navegador.');
     }
 
-    return false;
+    try {
+      const result = await signIn({ username: email, password });
+      const step = result.nextStep?.signInStep;
+
+      if (step === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        this.authStateSubject.next({
+          authenticated: false,
+          claims: null,
+          groups: [],
+          pendingChallenge: 'NEW_PASSWORD_REQUIRED',
+          pendingEmail: email
+        });
+        return 'NEW_PASSWORD_REQUIRED';
+      }
+
+      await this.finalizeLogin();
+      return 'SUCCESS';
+    } catch (error: any) {
+      throw this.mapCognitoError(error);
+    }
+  }
+
+async completeNewPassword(newPassword: string): Promise<void> {
+  const { pendingChallenge } = this.authStateSubject.value;
+
+  if (pendingChallenge !== 'NEW_PASSWORD_REQUIRED') {
+    throw this.buildError(
+      'NO_CHALLENGE',
+      'No hay un desafío de nueva contraseña activo.'
+    );
+  }
+
+  try {
+    // 🔥 FIX CRÍTICO: SOLO enviar la nueva contraseña
+    await confirmSignIn({
+      challengeResponse: newPassword
+    });
+
+    await this.finalizeLogin();
+  } catch (error: any) {
+    throw this.mapCognitoError(error);
+  }
+}
+
+
+  async forgotPassword(email: string): Promise<void> {
+    if (!this.isBrowser) {
+      throw this.buildError('PLATFORM', 'Auth disponible solo en navegador.');
+    }
+    try {
+      await resetPassword({ username: email });
+      this.authStateSubject.next({
+        ...this.authStateSubject.value,
+        pendingEmail: email,
+        pendingChallenge: null
+      });
+    } catch (error: any) {
+      throw this.mapCognitoError(error);
+    }
+  }
+
+  async forgotPasswordSubmit(email: string, code: string, newPassword: string): Promise<void> {
+    try {
+      await confirmResetPassword({
+        username: email,
+        confirmationCode: code,
+        newPassword
+      });
+      this.authStateSubject.next({
+        ...this.authStateSubject.value,
+        pendingEmail: null,
+        pendingChallenge: null
+      });
+    } catch (error: any) {
+      throw this.mapCognitoError(error);
+    }
+  }
+
+  async getSession(): Promise<any | null> {
+    if (!this.isBrowser) return null;
+    try {
+      const session = await fetchAuthSession();
+      return session;
+    } catch {
+      return null;
+    }
+  }
+
+  getAccessToken(): Observable<string | null> {
+    if (!this.isBrowser) {
+      return of(null);
+    }
+    return from(fetchAuthSession()).pipe(
+      map(session => session?.tokens?.accessToken?.toString() || null),
+      catchError(() => of(null))
+    );
+  }
+
+  getIdTokenClaims(): Observable<any | null> {
+    if (!this.isBrowser) {
+      return of(null);
+    }
+    return from(fetchAuthSession()).pipe(
+      map(session => session?.tokens?.idToken?.payload || null),
+      catchError(() => of(null))
+    );
+  }
+
+  hasClientGroup(): boolean {
+    return this.authStateSubject.value.groups.includes('Client');
   }
 
   async signOut(): Promise<void> {
+    if (!this.isBrowser) {
+      return;
+    }
     try {
-      if (!this.isBrowser) { return; }
       await signOut();
-      this.currentUserSubject.next(null);
-      this.isAuthenticatedSubject.next(false);
-      this.applyDefaultThemeWhenSignedOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-      throw error;
+    } finally {
+      this.resetState();
     }
   }
 
-  /**
-   * Purpose: apply the default theme only for signed-out sessions.
-   * Input: none. Output: void.
-   * Error handling: delegates to ThemeService.applyTheme for logging.
-   * Standards Check: SRP OK | DRY OK | Tests Pending.
-   */
+  private async finalizeLogin(): Promise<void> {
+    const session = await fetchAuthSession();
+    const claims = session.tokens?.idToken?.payload || null;
+    const groups = this.extractGroups(claims);
+
+    if (!groups.includes('Client')) {
+      await this.signOut();
+      throw this.buildError('NOT_CLIENT', 'Acceso no autorizado para esta aplicación.');
+    }
+
+    const user = await getCurrentUser();
+    const userProfile = await this.buildUserProfile(user, session);
+
+    this.currentUserSubject.next(userProfile);
+    this.isAuthenticatedSubject.next(true);
+    this.authStateSubject.next({
+      authenticated: true,
+      claims,
+      groups,
+      pendingChallenge: null,
+      pendingEmail: null
+    });
+  }
+
+  private resetState(): void {
+    this.currentUserSubject.next(null);
+    this.isAuthenticatedSubject.next(false);
+    this.authStateSubject.next({
+      authenticated: false,
+      claims: null,
+      groups: [],
+      pendingChallenge: null,
+      pendingEmail: null
+    });
+    this.applyDefaultThemeWhenSignedOut();
+  }
+
   private applyDefaultThemeWhenSignedOut(): void {
     if (this.isAuthenticatedSubject.value) {
       return;
@@ -208,23 +350,38 @@ export class AuthService {
     this.themeService.applyTheme(null);
   }
 
-  // Utility method to get auth session for API calls
-  getAuthSession(): Observable<any> {
-    if (!this.isBrowser) {
-      return of(null);
-    }
-    return from(fetchAuthSession()).pipe(
-      catchError(error => {
-        console.error('Error getting auth session:', error);
-        return of(null);
-      })
-    );
+  private buildError(code: string, message: string): AuthError {
+    const err = new Error(message) as AuthError;
+    err.code = code;
+    return err;
   }
 
-  // Get JWT token for API authentication
-  getIdToken(): Observable<string | null> {
-    return this.getAuthSession().pipe(
-      map(session => session?.tokens?.idToken?.toString() || null)
-    );
+  private mapCognitoError(error: any): AuthError {
+    const name = error?.name || error?.code;
+
+    switch (name) {
+      case 'UserNotFoundException':
+        return this.buildError('USER_NOT_FOUND', 'Usuario no encontrado.');
+      case 'NotAuthorizedException':
+        return this.buildError('INVALID_CREDENTIALS', 'Correo o contraseña incorrectos.');
+      case 'UserNotConfirmedException':
+        return this.buildError('USER_NOT_CONFIRMED', 'Usuario no confirmado.');
+      case 'PasswordResetRequiredException':
+        return this.buildError('PASSWORD_RESET_REQUIRED', 'Debes restablecer tu contraseña.');
+      case 'CodeMismatchException':
+        return this.buildError('CODE_MISMATCH', 'El código ingresado es inválido.');
+      case 'ExpiredCodeException':
+        return this.buildError('CODE_EXPIRED', 'El código ha expirado.');
+      case 'InvalidPasswordException':
+        return this.buildError('INVALID_PASSWORD', 'La contraseña no cumple las políticas.');
+      default:
+        return this.buildError('UNKNOWN', 'Ocurrió un error, intenta de nuevo.');
+    }
+  }
+
+  private logConfig(): void {
+    try {
+      console.info('[Auth] Config pool:', awsExports.aws_user_pools_id, 'client:', awsExports.aws_user_pools_web_client_id);
+    } catch {}
   }
 }

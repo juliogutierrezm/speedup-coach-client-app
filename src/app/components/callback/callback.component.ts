@@ -28,24 +28,9 @@ export class CallbackComponent implements OnInit {
         return;
       }
 
-      // If Hosted UI returned an error, show it immediately
-      const params = new URLSearchParams(window.location.search);
-      const error = params.get('error');
-      const errorDesc = params.get('error_description');
-      if (error) {
-        this.error = decodeURIComponent(errorDesc || 'No se pudo completar la autenticación.');
-        return;
-      }
-
-      // Finalize redirect and refresh auth state
-      await this.authService.checkAuthState();
-
-      // Evaluate synchronously after state refresh to avoid initial false emission
-      if (this.authService.isAuthenticatedSync()) {
-        this.router.navigate([this.resolvePostLoginRoute()]);
-      } else {
-        this.error = 'No se pudo completar la autenticación.';
-      }
+      // Callback no longer needed for custom login UI
+      // Redirect to login if user somehow reached this page
+      this.router.navigate(['/login']);
     } catch (error) {
       console.error('Callback error:', error);
       this.error = 'Error procesando la autenticación. Por favor intenta de nuevo.';
@@ -53,20 +38,6 @@ export class CallbackComponent implements OnInit {
   }
 
   retryLogin() {
-    this.authService.signInWithRedirect();
-  }
-
-  /**
-   * Purpose: select a post-login route based on the current user role.
-   * Input: none. Output: route path string.
-   * Error handling: defaults to admin/trainer dashboard when role is unknown.
-   * Standards Check: SRP OK | DRY OK | Tests Pending.
-   */
-  private resolvePostLoginRoute(): string {
-    const role = this.authService.getCurrentUserRole();
-    if (role === UserRole.CLIENT) {
-      return '/plans';
-    }
-    return '/unauthorized';
+    this.router.navigate(['/login']);
   }
 }

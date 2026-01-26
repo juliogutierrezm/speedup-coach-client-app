@@ -1,42 +1,93 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../services/auth.service';
+import { Subscription } from 'rxjs';
+import { AuthError, AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
-    CommonModule
+    CommonModule,
+    ReactiveFormsModule
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
   loading = false;
+  error: string | null = null;
+  private sub?: Subscription;
+  form!: FormGroup;
 
   constructor(
     private authService: AuthService,
-    private router: Router
-  ) {}
+    private router: Router,
+    private fb: FormBuilder
+  ) {
+    this.form = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required]]
+    });
+  }
 
-  ngOnInit() {
-    // Check if user is already authenticated
-    this.authService.isAuthenticated$.subscribe(isAuth => {
+  async ngOnInit() {
+    // Refresh auth state first
+    await this.authService.checkAuthState();
+    
+    this.sub = this.authService.isAuthenticated$.subscribe(isAuth => {
       if (isAuth) {
-      this.router.navigate(['/plans']);
+        this.router.navigate(['/plans']);
       }
     });
   }
 
-  async signInWithHostedUI() {
-    this.loading = true;
-    await this.authService.signInWithRedirect();
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
   }
 
-  async signUpWithHostedUI() {
+  async onSubmit() {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
     this.loading = true;
-    // For now, sign up also redirects to the hosted UI where users can choose to sign up.
-    await this.authService.signInWithRedirect();
+    this.error = null;
+    const { email, password } = this.form.value;
+
+    try {
+      const result = await this.authService.signIn(email!, password!);
+      if (result === 'NEW_PASSWORD_REQUIRED') {
+        this.router.navigate(['/change-password']);
+        return;
+      }
+      this.router.navigate(['/plans']);
+    } catch (err) {
+      const e = err as AuthError;
+      this.error = this.mapError(e?.code);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  goToForgotPassword(): void {
+    this.router.navigate(['/forgot-password']);
+  }
+
+  private mapError(code?: string): string {
+    switch (code) {
+      case 'INVALID_CREDENTIALS':
+        return 'Correo o contraseña incorrectos.';
+      case 'USER_NOT_FOUND':
+        return 'Usuario no encontrado.';
+      case 'PASSWORD_RESET_REQUIRED':
+        return 'Debes restablecer tu contraseña.';
+      case 'NOT_CLIENT':
+        return 'Acceso no autorizado para esta aplicación.';
+      default:
+        return 'No pudimos iniciar sesión. Intenta de nuevo.';
+    }
   }
 }

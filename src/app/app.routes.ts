@@ -55,14 +55,19 @@ const clientRoutes: Routes = [
 
 export const routes: Routes = [
   {
-    path: 'callback',
-    loadComponent: () =>
-      import('./components/callback/callback.component').then(m => m.CallbackComponent)
-  },
-  {
     path: 'login',
     loadComponent: () =>
       import('./components/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: 'change-password',
+    loadComponent: () =>
+      import('./components/change-password/change-password.component').then(m => m.ChangePasswordComponent)
+  },
+  {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./components/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent)
   },
   {
     path: 'unauthorized',
