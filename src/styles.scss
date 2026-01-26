@@ -23,7 +23,7 @@
   --overlay-base: rgb(var(--color-surface-soft) / 0.8);
   --shadow-soft: 0 32px 80px rgba(var(--color-shadow) / 0.25);
   --header-height: 72px;
-  --font-display: 'Inter', 'Poppins', system-ui, -apple-system, sans-serif;
+  --font-display: 'Inter', 'Roboto', 'Poppins', 'Montserrat', 'Oswald', 'Lato', system-ui, -apple-system, sans-serif;
 
   --glass-radius: 28px;
   --glass-blur: blur(32px);
@@ -77,7 +77,7 @@
 
 body {
   margin: 0;
-  font-family: var(--c-font);
+  font-family: var(--c-font, var(--font-display));
   min-height: 100vh;
   background: var(--background-base);
   color: rgb(var(--color-text));

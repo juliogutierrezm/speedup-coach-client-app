@@ -1,7 +1,19 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { 
+  ChangeDetectionStrategy, 
+  ChangeDetectorRef, 
+  Component, 
+  OnDestroy, 
+  OnInit,
+  ViewChild,
+  QueryList,
+  ViewChildren,
+  NgZone,
+  ElementRef,
+  AfterViewInit
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subject, of } from 'rxjs';
-import { catchError, finalize, takeUntil } from 'rxjs/operators';
+import { Subject, of, fromEvent } from 'rxjs';
+import { catchError, finalize, takeUntil, debounceTime, filter } from 'rxjs/operators';
 import {
   NgApexchartsModule,
   ApexAxisChartSeries,
@@ -16,7 +28,8 @@ import {
   ApexStroke,
   ApexTooltip,
   ApexXAxis,
-  ApexYAxis
+  ApexYAxis,
+  ChartComponent
 } from 'ng-apexcharts';
 import { ClientDataService, ClientProfile } from '../../services/client-data.service';
 import { TenantTheme } from '../../services/theme.service';
@@ -75,7 +88,9 @@ interface ChartCard {
   styleUrls: ['./client-body-composition.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
+export class ClientBodyCompositionComponent implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChildren(ChartComponent) chartComponents!: QueryList<ChartComponent>;
+
   clientProfile: ClientProfile | null = null;
   trainerName = '';
   latestMetrics: BodyMetric | null = null;
@@ -87,10 +102,15 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
   errorMessage = '';
 
   private destroy$ = new Subject<void>();
+  private resizeObserver: ResizeObserver | null = null;
+  private chartContainers: ElementRef[] = [];
+  private chartsInitialized = false;
 
   constructor(
     private clientDataService: ClientDataService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone,
+    private elementRef: ElementRef
   ) {}
 
   /**
@@ -104,7 +124,38 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Purpose: clean up subscriptions on destroy.
+   * Purpose: set up resize observer and viewport change handling.
+   * Input: none. Output: void.
+   * Error handling: gracefully handles missing ResizeObserver.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  ngAfterViewInit(): void {
+    // Set up viewport change detection (debounced to avoid excessive reflows)
+    this.ngZone.runOutsideAngular(() => {
+      fromEvent(window, 'resize')
+        .pipe(
+          debounceTime(200),
+          filter(() => this.chartCards.length > 0),
+          takeUntil(this.destroy$)
+        )
+        .subscribe(() => {
+          this.forceChartsReflow();
+        });
+    });
+
+    // Set up ResizeObserver for chart container changes (more reliable than window resize)
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.forceChartsReflow();
+      });
+
+      // Observe the main component container
+      this.resizeObserver.observe(this.elementRef.nativeElement);
+    }
+  }
+
+  /**
+   * Purpose: clean up subscriptions and observers on destroy.
    * Input: none. Output: void.
    * Error handling: N/A.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
@@ -112,6 +163,12 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+
+    // Clean up ResizeObserver to prevent memory leaks
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
   }
 
   /**
@@ -133,6 +190,45 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
   trackByMetric = (index: number, metric: BodyMetric): string => {
     return metric?.SK || metric?.measurementDate || `${index}`;
   };
+
+  /**
+   * Purpose: force ApexCharts to recalculate and redraw.
+   * Input: none. Output: void.
+   * Error handling: gracefully handles missing chart components.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   *
+   * Note: This method is critical for mobile-first responsive behavior.
+   * It triggers explicit reflow without breaking ChangeDetectionStrategy.OnPush
+   * by running outside Angular's zone and manually accessing chart APIs.
+   */
+  private forceChartsReflow(): void {
+    // Only proceed if charts have been initialized
+    if (!this.chartCards.length || !this.chartComponents) {
+      return;
+    }
+
+    // Run outside Angular zone to avoid triggering change detection
+    this.ngZone.runOutsideAngular(() => {
+      // Delay to ensure DOM has settled and measurements are accurate
+      Promise.resolve().then(() => {
+        if (this.chartComponents && this.chartComponents.length > 0) {
+          this.chartComponents.forEach((chart, index) => {
+            try {
+              // Get the chart instance and force redraw
+              const chartInstance = chart.chart;
+              if (chartInstance && typeof (chartInstance as any).windowResizeHandler === 'function') {
+                // Trigger the internal resize handler which recalculates dimensions
+                (chartInstance as any).windowResizeHandler();
+              }
+            } catch (error) {
+              // Silently handle errors to avoid breaking the component
+              console.debug(`[ClientBodyComposition] Chart ${index} reflow error:`, error);
+            }
+          });
+        }
+      });
+    });
+  }
 
   /**
    * Purpose: render age label from date of birth.
@@ -222,6 +318,12 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
         this.latestMetrics = this.resolveLatestMetric(data.user?.latestBodyMetrics, this.metricsAsc);
         this.chartCards = this.buildChartCards(this.metricsAsc, this.theme);
         this.cdr.markForCheck();
+
+        // Trigger explicit reflow after data is loaded and rendered
+        // This ensures charts render correctly on first load and after refresh
+        Promise.resolve().then(() => {
+          this.forceChartsReflow();
+        });
       });
   }
 
@@ -359,22 +461,43 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
       series: [series],
       chart: {
         type: 'line',
-        height: 260,
+        height: 200,
+        width: '100%',
+        parentHeightOffset: 0,
+        redrawOnParentResize: true,
+        animations: {
+          enabled: true,
+          speed: 500,
+          animateGradually: {
+            enabled: true,
+            delay: 100
+          }
+        },
         toolbar: { show: false },
         zoom: { enabled: false },
-        fontFamily
+        fontFamily,
+        sparkline: { enabled: false },
+        offsetX: 0,
+        offsetY: 0
       },
       colors,
       dataLabels: { enabled: false },
-      stroke: { curve: 'smooth', width: 3 },
+      stroke: { curve: 'smooth', width: 3, lineCap: 'round' },
       markers: { size: 4, strokeWidth: 0, hover: { size: 6 } },
       fill: { type: 'solid' },
-      grid: { borderColor: 'var(--c-border)', strokeDashArray: 4 },
+      grid: {
+        borderColor: 'var(--c-border)',
+        strokeDashArray: 4,
+        padding: { top: 8, right: 8, bottom: 8, left: 8 },
+        position: 'front',
+        xaxis: { lines: { show: false } },
+        yaxis: { lines: { show: true } }
+      },
       xaxis: {
         type: 'datetime',
         labels: {
           formatter: (value: string | number) => this.formatAxisDate(value),
-          style: { colors: 'var(--c-muted)' }
+          style: { colors: 'var(--c-muted)', fontSize: '11px' }
         },
         axisBorder: { color: 'var(--c-border)' },
         axisTicks: { color: 'var(--c-border)' }
@@ -382,14 +505,15 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
       yaxis: {
         labels: {
           formatter: (value: number) => this.formatAxisNumber(value),
-          style: { colors: 'var(--c-muted)' }
+          style: { colors: 'var(--c-muted)', fontSize: '11px' }
         }
       },
       tooltip: {
         enabled: true,
         theme: isDark ? 'dark' : 'light',
         x: { format: 'dd/MM/yy' },
-        y: { formatter: (value: number) => this.formatTooltipValue(value, unit) }
+        y: { formatter: (value: number) => this.formatTooltipValue(value, unit) },
+        fixed: { enabled: false }
       },
       legend: { show: false },
       responsive: this.getChartResponsive(),
@@ -415,14 +539,28 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
       series,
       chart: {
         type: 'area',
-        height: 280,
+        height: 200,
+        width: '100%',
+        parentHeightOffset: 0,
+        redrawOnParentResize: true,
+        animations: {
+          enabled: true,
+          speed: 500,
+          animateGradually: {
+            enabled: true,
+            delay: 100
+          }
+        },
         toolbar: { show: false },
         zoom: { enabled: false },
-        fontFamily
+        fontFamily,
+        sparkline: { enabled: false },
+        offsetX: 0,
+        offsetY: 0
       },
       colors,
       dataLabels: { enabled: false },
-      stroke: { curve: 'smooth', width: 3 },
+      stroke: { curve: 'smooth', width: 3, lineCap: 'round' },
       markers: { size: 0, strokeWidth: 0 },
       fill: {
         type: 'gradient',
@@ -433,12 +571,19 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
           stops: [0, 90, 100]
         }
       },
-      grid: { borderColor: 'var(--c-border)', strokeDashArray: 4 },
+      grid: {
+        borderColor: 'var(--c-border)',
+        strokeDashArray: 4,
+        padding: { top: 8, right: 8, bottom: 8, left: 8 },
+        position: 'front',
+        xaxis: { lines: { show: false } },
+        yaxis: { lines: { show: true } }
+      },
       xaxis: {
         type: 'datetime',
         labels: {
           formatter: (value: string | number) => this.formatAxisDate(value),
-          style: { colors: 'var(--c-muted)' }
+          style: { colors: 'var(--c-muted)', fontSize: '11px' }
         },
         axisBorder: { color: 'var(--c-border)' },
         axisTicks: { color: 'var(--c-border)' }
@@ -446,7 +591,7 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
       yaxis: {
         labels: {
           formatter: (value: number) => this.formatAxisNumber(value),
-          style: { colors: 'var(--c-muted)' }
+          style: { colors: 'var(--c-muted)', fontSize: '11px' }
         }
       },
       tooltip: {
@@ -454,7 +599,8 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
         theme: isDark ? 'dark' : 'light',
         shared: true,
         x: { format: 'dd/MM/yy' },
-        y: { formatter: (value: number) => this.formatTooltipValue(value, unit) }
+        y: { formatter: (value: number) => this.formatTooltipValue(value, unit) },
+        fixed: { enabled: false }
       },
       legend: {
         position: 'top',
@@ -500,21 +646,152 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy {
    * Input: none. Output: ApexResponsive[].
    * Error handling: N/A.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
+   *
+   * Note: Breakpoints are ordered from smallest to largest (mobile-first).
+   * Each breakpoint ensures proper scaling without truncation or overflow.
    */
   private getChartResponsive(): ApexResponsive[] {
     return [
+      // Ultra-mobile: < 360px (very small devices)
       {
-        breakpoint: 1024,
+        breakpoint: 360,
         options: {
-          chart: { height: 240 },
-          stroke: { width: 2 },
-          markers: { size: 3 }
+          chart: {
+            height: 160,
+            parentHeightOffset: 0,
+            offsetX: 0,
+            offsetY: 0
+          },
+          stroke: { width: 1.5 },
+          markers: { size: 2 },
+          xaxis: {
+            labels: {
+              style: { fontSize: '8px' }
+            }
+          },
+          yaxis: {
+            labels: {
+              style: { fontSize: '8px' }
+            }
+          },
+          grid: {
+            padding: { top: 4, right: 4, bottom: 4, left: 4 }
+          }
         }
       },
+      // Mobile: 360px - 480px
+      {
+        breakpoint: 480,
+        options: {
+          chart: {
+            height: 180,
+            parentHeightOffset: 0,
+            offsetX: 0,
+            offsetY: 0
+          },
+          stroke: { width: 1.5 },
+          markers: { size: 2 },
+          xaxis: {
+            labels: {
+              style: { fontSize: '9px' }
+            }
+          },
+          yaxis: {
+            labels: {
+              style: { fontSize: '9px' }
+            }
+          },
+          grid: {
+            padding: { top: 5, right: 5, bottom: 5, left: 5 }
+          }
+        }
+      },
+      // Small tablet: 480px - 640px
       {
         breakpoint: 640,
         options: {
-          chart: { height: 220 }
+          chart: {
+            height: 200,
+            parentHeightOffset: 0,
+            offsetX: 0,
+            offsetY: 0
+          },
+          stroke: { width: 1.8 },
+          markers: { size: 2.5 },
+          xaxis: {
+            labels: {
+              style: { fontSize: '10px' }
+            }
+          },
+          yaxis: {
+            labels: {
+              style: { fontSize: '10px' }
+            }
+          },
+          grid: {
+            padding: { top: 6, right: 6, bottom: 6, left: 6 }
+          }
+        }
+      },
+      // Tablet: 640px - 768px
+      {
+        breakpoint: 768,
+        options: {
+          chart: {
+            height: 240,
+            parentHeightOffset: 0,
+            offsetX: 0,
+            offsetY: 0
+          },
+          stroke: { width: 2 },
+          markers: { size: 3 },
+          xaxis: {
+            labels: {
+              style: { fontSize: '11px' }
+            }
+          },
+          yaxis: {
+            labels: {
+              style: { fontSize: '11px' }
+            }
+          },
+          grid: {
+            padding: { top: 8, right: 8, bottom: 8, left: 8 }
+          }
+        }
+      },
+      // Large tablet/small desktop: 768px - 1024px
+      {
+        breakpoint: 1024,
+        options: {
+          chart: {
+            height: 280,
+            parentHeightOffset: 0,
+            offsetX: 0,
+            offsetY: 0
+          },
+          stroke: { width: 2.5 },
+          markers: { size: 3.5 },
+          grid: {
+            padding: { top: 8, right: 8, bottom: 8, left: 8 }
+          }
+        }
+      },
+      // Large desktop: >= 1440px
+      {
+        breakpoint: 1440,
+        options: {
+          chart: {
+            height: 320,
+            parentHeightOffset: 0,
+            offsetX: 0,
+            offsetY: 0
+          },
+          stroke: { width: 3 },
+          markers: { size: 4 },
+          grid: {
+            padding: { top: 10, right: 10, bottom: 10, left: 10 }
+          }
         }
       }
     ];
