@@ -1,0 +1,154 @@
+<section class="body-composition-page">
+  <header class="body-composition-header">
+    <div class="header-copy">
+      <p class="header-eyebrow">Composicion corporal</p>
+      <h1 class="header-title">Evolucion del cliente</h1>
+      <p class="header-subtitle">
+        Visualiza la evolucion de tus metricas y compara grasa vs musculo.
+      </p>
+    </div>
+
+    <div class="header-meta" *ngIf="clientProfile as profile">
+      <div class="meta-card">
+        <span class="meta-label">Cliente</span>
+        <span class="meta-value">
+          {{ profile.givenName || '-' }} {{ profile.familyName || '' }}
+        </span>
+      </div>
+      <div class="meta-card">
+        <span class="meta-label">Edad</span>
+        <span class="meta-value">{{ getAgeLabel(profile.dateOfBirth) }}</span>
+      </div>
+      <div class="meta-card">
+        <span class="meta-label">Trainer</span>
+        <span class="meta-value">{{ trainerName || 'Sin asignar' }}</span>
+      </div>
+    </div>
+  </header>
+
+  <div
+    *ngIf="errorMessage"
+    class="body-composition-error"
+    role="status"
+    aria-live="polite"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <div
+    *ngIf="isLoading"
+    class="body-composition-loading"
+    role="status"
+    aria-live="polite"
+    [attr.aria-busy]="isLoading"
+  >
+    <div class="app-spinner" aria-hidden="true"></div>
+    <p>Cargando composicion corporal...</p>
+  </div>
+
+  <ng-container *ngIf="!isLoading && !errorMessage">
+    <section class="latest-metrics" *ngIf="latestMetrics as latest">
+      <div class="latest-header">
+        <div>
+          <p class="latest-eyebrow">Ultima medicion</p>
+          <h2 class="latest-title">{{ formatDisplayDate(latest.measurementDate) }}</h2>
+        </div>
+        <span class="latest-chip">Resumen actual</span>
+      </div>
+
+      <div class="latest-grid">
+        <article class="metric-card">
+          <span class="metric-label">Peso</span>
+          <span class="metric-value">{{ formatMetricValue(latest.weightKg, 'kg', 1) }}</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">% grasa</span>
+          <span class="metric-value">{{ formatMetricValue(latest.bodyFatPercentage, '%', 1) }}</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Masa muscular</span>
+          <span class="metric-value">{{ formatMetricValue(latest.muscleMassKg, 'kg', 1) }}</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Edad metabolica</span>
+          <span class="metric-value">{{ formatMetricValue(latest.metabolicAge, 'anos', 0) }}</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="charts-section" *ngIf="chartCards.length; else noCharts">
+      <div class="charts-grid">
+        <article
+          class="chart-card"
+          *ngFor="let card of chartCards; trackBy: trackByChartId"
+        >
+          <div class="chart-card-header">
+            <h3>{{ card.title }}</h3>
+            <p>{{ card.subtitle }}</p>
+          </div>
+
+          <apx-chart
+            [series]="card.options.series"
+            [chart]="card.options.chart"
+            [xaxis]="card.options.xaxis"
+            [yaxis]="card.options.yaxis"
+            [dataLabels]="card.options.dataLabels"
+            [stroke]="card.options.stroke"
+            [markers]="card.options.markers"
+            [grid]="card.options.grid"
+            [tooltip]="card.options.tooltip"
+            [colors]="card.options.colors"
+            [fill]="card.options.fill"
+            [legend]="card.options.legend"
+            [responsive]="card.options.responsive"
+            [noData]="card.options.noData"
+          ></apx-chart>
+        </article>
+      </div>
+    </section>
+
+    <ng-template #noCharts>
+      <div class="body-composition-empty">
+        Sin mediciones historicas para graficar.
+      </div>
+    </ng-template>
+
+    <section class="history-section">
+      <div class="history-header">
+        <div>
+          <h2>Historial de mediciones</h2>
+          <p>Ordenado del mas reciente al mas antiguo.</p>
+        </div>
+        <span class="history-chip">{{ metricsDesc.length }} registros</span>
+      </div>
+
+      <div class="history-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Peso</th>
+              <th>% grasa</th>
+              <th>Masa muscular</th>
+              <th>Edad metabolica</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let metric of metricsDesc; trackBy: trackByMetric">
+              <td>{{ formatDisplayDate(metric.measurementDate) }}</td>
+              <td>{{ formatMetricValue(metric.weightKg, 'kg', 1) }}</td>
+              <td>{{ formatMetricValue(metric.bodyFatPercentage, '%', 1) }}</td>
+              <td>{{ formatMetricValue(metric.muscleMassKg, 'kg', 1) }}</td>
+              <td>{{ formatMetricValue(metric.metabolicAge, 'anos', 0) }}</td>
+            </tr>
+            <tr *ngIf="!metricsDesc.length">
+              <td colspan="5" class="history-empty">
+                Sin registros disponibles.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </ng-container>
+</section>

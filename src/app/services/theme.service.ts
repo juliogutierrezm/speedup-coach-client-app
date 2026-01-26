@@ -5,6 +5,27 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
+const ALLOWED_FONT_FAMILIES = ['Inter', 'Roboto', 'Poppins', 'Montserrat', 'Oswald', 'Lato'];
+const SYSTEM_FONT_FALLBACKS = ['system-ui', '-apple-system', 'sans-serif'];
+const DEFAULT_PRIMARY_FONT = 'Inter';
+
+const resolvePrimaryFont = (fontFamily?: string | null): string => {
+  const normalized = (fontFamily || '').trim().toLowerCase();
+  const match = ALLOWED_FONT_FAMILIES.find(font => font.toLowerCase() === normalized);
+  return match || DEFAULT_PRIMARY_FONT;
+};
+
+const buildFontStack = (fontFamily?: string | null): string => {
+  const primary = resolvePrimaryFont(fontFamily);
+  const fallbackFonts = ALLOWED_FONT_FAMILIES
+    .filter(font => font !== primary)
+    .map(font => `'${font}'`);
+
+  return [`'${primary}'`, ...fallbackFonts, ...SYSTEM_FONT_FALLBACKS].join(', ');
+};
+
+const DEFAULT_FONT_STACK = buildFontStack(DEFAULT_PRIMARY_FONT);
+
 export interface ThemeConfig {
   tenantId?: string;
   tenantType?: 'TRAINER' | 'COMPANY' | 'DEFAULT';
@@ -48,7 +69,7 @@ export class ThemeService {
     primaryColor: '#FF9900',
     accentColor: '#22D3EE',
     backgroundMode: 'dark',
-    fontFamily: 'Inter',
+    fontFamily: DEFAULT_FONT_STACK,
     appName: 'TrainGrid',
     tagline: 'Entrena mejor. Progresa mas rapido.',
     logoUrl: '/assets/TrainGrid.png'
@@ -100,10 +121,13 @@ export class ThemeService {
       const normalized = this.normalizeTenantTheme(theme);
       const root = document.documentElement;
       const isDark = normalized.backgroundMode === 'dark';
+      const fontStack = normalized.fontFamily || DEFAULT_FONT_STACK;
 
       root.style.setProperty('--client-primary', normalized.primaryColor);
       root.style.setProperty('--client-accent', normalized.accentColor);
-      root.style.setProperty('--client-font', normalized.fontFamily);
+      root.style.setProperty('--client-font', fontStack);
+      root.style.setProperty('--font-display', fontStack);
+      root.style.setProperty('--c-font', fontStack);
       root.style.setProperty('--client-app-name', normalized.appName || '');
       root.style.setProperty('--client-tagline', normalized.tagline || '');
       root.style.setProperty('--client-logo-url', normalized.logoUrl || '');
@@ -280,7 +304,7 @@ export class ThemeService {
             : 'light'
           : 'dark';
     const typography = 'typography' in config ? (config as ThemeConfig).typography : undefined;
-    const fontFamily = config.fontFamily || typography || '';
+    const fontFamily = this.normalizeFontFamily(config.fontFamily || typography);
 
     return {
       tenantId: config.tenantId,
@@ -293,5 +317,9 @@ export class ThemeService {
       tagline: config.tagline || '',
       logoUrl: config.logoUrl || ''
     };
+  }
+
+  private normalizeFontFamily(fontFamily?: string | null): string {
+    return buildFontStack(fontFamily);
   }
 }
