@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -13,11 +12,10 @@ import { AuthService } from './services/auth.service';
   template: `<router-outlet></router-outlet>`
 })
 export class AppComponent implements OnInit {
-  constructor(private authService: AuthService) {}
+  constructor() {}
 
   async ngOnInit() {
-    // Ensure current auth state is synced on app load
-    await this.authService.checkAuthState();
+    // Auth state is resolved by guards when needed
   }
 }
 
