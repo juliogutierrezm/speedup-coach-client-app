@@ -241,11 +241,12 @@ export class AuthService {
       const preSessionCheck = await fetchAuthSession();
       console.log('[DEBUG] 📊 Session before finalizeLogin | hasIdToken:', !!preSessionCheck.tokens?.idToken, '| hasAccessToken:', !!preSessionCheck.tokens?.accessToken);
       if (preSessionCheck.tokens?.idToken?.payload) {
+        const exp = preSessionCheck.tokens.idToken.payload.exp;
         console.log('[DEBUG] 📋 ID Token Claims:', {
           sub: preSessionCheck.tokens.idToken.payload.sub,
           email: preSessionCheck.tokens.idToken.payload.email,
           groups: preSessionCheck.tokens.idToken.payload['cognito:groups'],
-          tokenExpiry: new Date(preSessionCheck.tokens.idToken.payload.exp * 1000)
+          tokenExpiry: exp ? new Date(exp * 1000) : 'N/A'
         });
       }
 
@@ -342,8 +343,7 @@ export class AuthService {
     const session = await fetchAuthSession();
     console.log('[DEBUG] 📊 finalizeLogin | session tokens:', {
       hasIdToken: !!session.tokens?.idToken,
-      hasAccessToken: !!session.tokens?.accessToken,
-      hasRefreshToken: !!session.tokens?.refreshToken
+      hasAccessToken: !!session.tokens?.accessToken
     });
 
     const claims = session.tokens?.idToken?.payload || null;
