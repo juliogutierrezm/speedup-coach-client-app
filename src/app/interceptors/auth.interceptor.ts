@@ -1,11 +1,16 @@
 import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
+import {
+  HttpInterceptor,
+  HttpRequest,
+  HttpHandler,
+  HttpEvent,
+  HttpErrorResponse
+} from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
-
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -23,18 +28,27 @@ export class AuthInterceptor implements HttpInterceptor {
       return next.handle(req);
     }
 
-    // Usuario no autenticado - BLOQUEAR request
+    // Usuario no autenticado
     if (!this.authService.isAuthenticatedSync()) {
       this.authService.signOut();
       this.router.navigate(['/login']);
       return throwError(() => new Error('Unauthorized'));
     }
 
-    return this.authService.getAccessToken().pipe(
+    // 👉 CAMBIO CLAVE: usar ID TOKEN
+    return this.authService.getIdToken().pipe(
       switchMap(token => {
-        const authReq = token
-          ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-          : req;
+        if (!token) {
+          this.authService.signOut();
+          this.router.navigate(['/login']);
+          return throwError(() => new Error('Unauthorized'));
+        }
+
+        const authReq = req.clone({
+          setHeaders: {
+            Authorization: `Bearer ${token}`
+          }
+        });
 
         return next.handle(authReq).pipe(
           catchError(err => this.handleApiError(err))
@@ -55,5 +69,3 @@ export class AuthInterceptor implements HttpInterceptor {
     return throwError(() => err);
   }
 }
-
-

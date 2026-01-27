@@ -51,10 +51,7 @@ export class ChangePasswordComponent implements OnInit, OnDestroy {
   }
 
   async onSubmit() {
-    console.log('[DEBUG] 🎬 onSubmit START | form valid:', this.form.valid, '| passwordsMatch:', this.passwordsMatch());
-    
     if (this.form.invalid || !this.passwordsMatch()) {
-      console.log('[DEBUG] ⚠️  onSubmit | Form invalid or passwords don\'t match, marking as touched');
       this.form.markAllAsTouched();
       return;
     }
@@ -63,15 +60,11 @@ export class ChangePasswordComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    console.log('[DEBUG] 📤 onSubmit | Calling authService.completeNewPassword');
     try {
       await this.authService.completeNewPassword(newPassword);
-      console.log('[DEBUG] ✅ onSubmit | completeNewPassword resolved successfully');
       this.loading = false;
-      console.log('[DEBUG] 📍 onSubmit | Navigating to /plans');
       await this.router.navigate(['/plans']);
     } catch (err) {
-      console.error('[DEBUG] ❌ onSubmit | completeNewPassword ERROR:', err);
       const e = err as AuthError;
       this.error = this.mapError(e.code);
     } finally {

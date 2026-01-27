@@ -77,15 +77,11 @@ export class AuthService {
       return;
     }
 
-    console.log('[DEBUG] 🔍 checkAuthState START');
     try {
       const session = await fetchAuthSession();
       const hasTokens = !!session.tokens?.idToken;
 
-      console.log('[DEBUG] 📊 checkAuthState | hasTokens:', hasTokens, '| hasIdToken:', !!session.tokens?.idToken, '| hasAccessToken:', !!session.tokens?.accessToken);
-
       if (!hasTokens) {
-        console.log('[DEBUG] ⚠️  checkAuthState | No tokens found, returning');
         return;
       }
 
@@ -93,8 +89,6 @@ export class AuthService {
       const userProfile = await this.buildUserProfile(user, session);
       const claims = session.tokens?.idToken?.payload ?? null;
       const groups = this.extractGroups(claims);
-
-      console.log('[DEBUG] ✅ checkAuthState SUCCESS | user:', user.username, '| groups:', groups, '| authenticated: true');
 
       this.currentUserSubject.next(userProfile);
       this.isAuthenticatedSubject.next(true);
@@ -106,7 +100,6 @@ export class AuthService {
         pendingEmail: null
       });
     } catch (error) {
-      console.error('[DEBUG] ❌ checkAuthState ERROR:', error);
       this.resetState();
     }
   }
@@ -184,19 +177,15 @@ export class AuthService {
       throw this.buildError('PLATFORM', 'Auth disponible solo en navegador.');
     }
 
-    console.log('[DEBUG] 🔹 signIn START | email:', email);
     try {
       const result = await signIn({
         username: email,
         password
       });
-
-      console.log('[DEBUG] ✅ signIn RESULT | nextStep:', result.nextStep?.signInStep, '| full result:', result);
       
       const step = result.nextStep?.signInStep;
 
       if (step === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
-        console.log('[DEBUG] 🔑 NEW_PASSWORD_REQUIRED detected | email:', email);
         this.authStateSubject.next({
           authenticated: false,
           claims: null,
@@ -207,19 +196,15 @@ export class AuthService {
         return 'NEW_PASSWORD_REQUIRED';
       }
 
-      console.log('[DEBUG] → calling finalizeLogin from signIn');
       await this.finalizeLogin();
       return 'SUCCESS';
     } catch (error: any) {
-      console.error('[DEBUG] ❌ signIn ERROR', error);
       throw this.mapCognitoError(error);
     }
   }
 
   async completeNewPassword(newPassword: string): Promise<void> {
     const { pendingChallenge, pendingEmail } = this.authStateSubject.value;
-
-    console.log('[DEBUG] 🔑 completeNewPassword START | pendingChallenge:', pendingChallenge, '| pendingEmail:', pendingEmail);
 
     if (pendingChallenge !== 'NEW_PASSWORD_REQUIRED') {
       throw this.buildError(
@@ -229,32 +214,12 @@ export class AuthService {
     }
 
     try {
-      // 🔥 FIX CRÍTICO: SOLO enviar la nueva contraseña
-      console.log('[DEBUG] 📤 confirmSignIn CALL | challengeResponse: [password]');
       const confirmResult = await confirmSignIn({
         challengeResponse: newPassword
       });
 
-      console.log('[DEBUG] ✅ confirmSignIn RESULT:', confirmResult);
-
-      console.log('[DEBUG] → Checking fetchAuthSession BEFORE finalizeLogin');
-      const preSessionCheck = await fetchAuthSession();
-      console.log('[DEBUG] 📊 Session before finalizeLogin | hasIdToken:', !!preSessionCheck.tokens?.idToken, '| hasAccessToken:', !!preSessionCheck.tokens?.accessToken);
-      if (preSessionCheck.tokens?.idToken?.payload) {
-        const exp = preSessionCheck.tokens.idToken.payload.exp;
-        console.log('[DEBUG] 📋 ID Token Claims:', {
-          sub: preSessionCheck.tokens.idToken.payload.sub,
-          email: preSessionCheck.tokens.idToken.payload.email,
-          groups: preSessionCheck.tokens.idToken.payload['cognito:groups'],
-          tokenExpiry: exp ? new Date(exp * 1000) : 'N/A'
-        });
-      }
-
-      console.log('[DEBUG] → calling finalizeLogin from completeNewPassword');
       await this.finalizeLogin();
-      console.log('[DEBUG] ✅ completeNewPassword SUCCESS | authState:', this.authStateSubject.value);
     } catch (error: any) {
-      console.error('[DEBUG] ❌ completeNewPassword ERROR', error);
       throw this.mapCognitoError(error);
     }
   }
@@ -303,6 +268,14 @@ export class AuthService {
     }
   }
 
+  getIdToken(): Observable<string | null> {
+  return from(fetchAuthSession()).pipe(
+    map(session => session?.tokens?.idToken?.toString() || null),
+    catchError(() => of(null))
+  );
+}
+
+
   getAccessToken(): Observable<string | null> {
     if (!this.isBrowser) {
       return of(null);
@@ -339,30 +312,18 @@ export class AuthService {
   }
 
   private async finalizeLogin(): Promise<void> {
-    console.log('[DEBUG] 📌 finalizeLogin START');
     const session = await fetchAuthSession();
-    console.log('[DEBUG] 📊 finalizeLogin | session tokens:', {
-      hasIdToken: !!session.tokens?.idToken,
-      hasAccessToken: !!session.tokens?.accessToken
-    });
 
     const claims = session.tokens?.idToken?.payload || null;
     const groups = this.extractGroups(claims);
 
-    console.log('[DEBUG] 🔎 finalizeLogin | groups extracted:', groups);
-
     if (!groups.includes('Client')) {
-      console.error('[DEBUG] ❌ finalizeLogin | User NOT in Client group | groups:', groups);
       await this.signOut();
       throw this.buildError('NOT_CLIENT', 'Acceso no autorizado para esta aplicación.');
     }
 
     const user = await getCurrentUser();
-    console.log('[DEBUG] 👤 finalizeLogin | getCurrentUser result | userId:', user.userId, '| username:', user.username);
-    
     const userProfile = await this.buildUserProfile(user, session);
-    
-    console.log('[DEBUG] ✅ finalizeLogin | Setting authenticated state | user:', userProfile.email, '| role:', userProfile.role);
 
     this.currentUserSubject.next(userProfile);
     this.isAuthenticatedSubject.next(true);

@@ -117,8 +117,6 @@ export class ClientDataService {
         };
       }),
       catchError(error => {
-        const elapsedMs = this.getElapsedMs(startedAt);
-        console.error('[ClientDataService] getClientData failed', { elapsedMs, error });
         this.themeService.applyTheme(null);
         return of({ user: {} as ClientProfile, plans: [], bodyMetrics: [], theme: null });
       }),

@@ -32,16 +32,14 @@ export class LoginComponent implements OnInit, OnDestroy {
     });
   }
 
-  async ngOnInit() {
-    // Refresh auth state first
-    await this.authService.checkAuthState();
-    
+  ngOnInit() {
     this.sub = this.authService.isAuthenticated$.subscribe(isAuth => {
       if (isAuth) {
         this.router.navigate(['/plans']);
       }
     });
   }
+
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
@@ -60,14 +58,17 @@ export class LoginComponent implements OnInit, OnDestroy {
     try {
       const result = await this.authService.signIn(email!, password!);
       if (result === 'NEW_PASSWORD_REQUIRED') {
+        this.loading = false;
         this.router.navigate(['/change-password']);
         return;
       }
+      this.loading = false;
       this.router.navigate(['/plans']);
     } catch (err) {
       const e = err as AuthError;
       this.error = this.mapError(e?.code);
     } finally {
+      // Ensure loading is false even if navigation didn't run
       this.loading = false;
     }
   }
