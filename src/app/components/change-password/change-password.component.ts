@@ -32,9 +32,17 @@ export class ChangePasswordComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.sub = this.authService.authState$.subscribe(state => {
-      if (state.pendingChallenge !== 'NEW_PASSWORD_REQUIRED') {
-        this.router.navigate(['/login']);
+      // If still in NEW_PASSWORD_REQUIRED challenge, stay on this screen
+      if (state.pendingChallenge === 'NEW_PASSWORD_REQUIRED') {
+        return;
       }
+      // If authenticated after completing challenge, go to plans
+      if (state.authenticated) {
+        this.router.navigate(['/plans']);
+        return;
+      }
+      // Otherwise, no active session: return to login
+      this.router.navigate(['/login']);
     });
   }
 
@@ -43,7 +51,10 @@ export class ChangePasswordComponent implements OnInit, OnDestroy {
   }
 
   async onSubmit() {
+    console.log('[DEBUG] 🎬 onSubmit START | form valid:', this.form.valid, '| passwordsMatch:', this.passwordsMatch());
+    
     if (this.form.invalid || !this.passwordsMatch()) {
+      console.log('[DEBUG] ⚠️  onSubmit | Form invalid or passwords don\'t match, marking as touched');
       this.form.markAllAsTouched();
       return;
     }
@@ -52,10 +63,15 @@ export class ChangePasswordComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
+    console.log('[DEBUG] 📤 onSubmit | Calling authService.completeNewPassword');
     try {
       await this.authService.completeNewPassword(newPassword);
-      this.router.navigate(['/plans']);
+      console.log('[DEBUG] ✅ onSubmit | completeNewPassword resolved successfully');
+      this.loading = false;
+      console.log('[DEBUG] 📍 onSubmit | Navigating to /plans');
+      await this.router.navigate(['/plans']);
     } catch (err) {
+      console.error('[DEBUG] ❌ onSubmit | completeNewPassword ERROR:', err);
       const e = err as AuthError;
       this.error = this.mapError(e.code);
     } finally {
@@ -90,6 +106,8 @@ export class ChangePasswordComponent implements OnInit, OnDestroy {
     switch (code) {
       case 'INVALID_PASSWORD':
         return 'La contraseña no cumple con los requisitos.';
+      case 'NOT_CLIENT':
+        return 'Acceso no autorizado para esta aplicación.';
       default:
         return 'No pudimos actualizar la contraseña. Intenta de nuevo.';
     }
