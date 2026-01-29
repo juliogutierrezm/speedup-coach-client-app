@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
+import { PublicOnlyGuard } from './guards/public-only.guard';
 import { UserRole } from './services/auth.service';
 import { ClientLayoutComponent } from './layout/client-layout.component';
 
@@ -56,16 +57,19 @@ const clientRoutes: Routes = [
 export const routes: Routes = [
   {
     path: 'login',
+    canActivate: [PublicOnlyGuard],
     loadComponent: () =>
       import('./components/login/login.component').then(m => m.LoginComponent)
   },
   {
     path: 'change-password',
+    canActivate: [PublicOnlyGuard],
     loadComponent: () =>
       import('./components/change-password/change-password.component').then(m => m.ChangePasswordComponent)
   },
   {
     path: 'forgot-password',
+    canActivate: [PublicOnlyGuard],
     loadComponent: () =>
       import('./components/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent)
   },

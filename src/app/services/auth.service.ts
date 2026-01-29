@@ -1,7 +1,7 @@
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, Observable, from, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, filter, map, take } from 'rxjs/operators';
 import {
   confirmResetPassword,
   confirmSignIn,
@@ -31,12 +31,19 @@ export enum UserRole {
   CLIENT = 'client'
 }
 
+export type AuthStatus = 'unknown' | 'authenticated' | 'unauthenticated';
+
 export interface AuthState {
+  /**
+   * Deprecated. Use `authStatus` instead.
+   * Kept temporarily for minimal churn across components.
+   */
   authenticated: boolean;
   claims: any | null;
   groups: string[];
   pendingChallenge?: 'NEW_PASSWORD_REQUIRED' | null;
   pendingEmail?: string | null;
+  authStatus?: AuthStatus;
 }
 
 export interface AuthError extends Error {
@@ -48,60 +55,93 @@ export interface AuthError extends Error {
 })
 export class AuthService {
   private currentUserSubject = new BehaviorSubject<UserProfile | null>(null);
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  /**
+   * Auth machine status:
+   * - unknown: not yet resolved
+   * - authenticated: valid tokens + user profile loaded
+   * - unauthenticated: no valid session
+   */
+  private authStatusSubject = new BehaviorSubject<AuthStatus>('unknown');
   private authStateSubject = new BehaviorSubject<AuthState>({
     authenticated: false,
     claims: null,
     groups: [],
     pendingChallenge: null,
-    pendingEmail: null
+    pendingEmail: null,
+    authStatus: 'unknown'
   });
   private readonly isBrowser: boolean;
 
+  private initAuthPromise: Promise<void> | null = null;
+
   public currentUser$ = this.currentUserSubject.asObservable();
-  public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  /** Convenience boolean stream for existing components. */
+  public isAuthenticated$ = this.authStatusSubject.pipe(map(s => s === 'authenticated'));
+  public authStatus$ = this.authStatusSubject.asObservable();
   public authState$ = this.authStateSubject.asObservable();
 
   constructor(
     @Inject(PLATFORM_ID) platformId: Object,
     private themeService: ThemeService
   ) {
-    this.isBrowser = isPlatformBrowser(platformId);
+    // Some build-time tooling (e.g. SSR route extraction) can run with a "browser" platformId
+    // but without real DOM globals. Guard against executing browser-only code in that context.
+    this.isBrowser =
+      isPlatformBrowser(platformId) &&
+      typeof window !== 'undefined' &&
+      typeof document !== 'undefined';
     if (this.isBrowser) {
       this.logConfig();
     }
   }
 
-  async checkAuthState(): Promise<void> {
+  /**
+   * Resolves auth status deterministically.
+   * Idempotent: multiple callers share the same promise.
+   */
+  initAuth(): Promise<void> {
     if (!this.isBrowser) {
-      return;
+      // SSR render should stay neutral; hydration will resolve in browser.
+      return Promise.resolve();
     }
 
-    try {
-      const session = await fetchAuthSession();
-      const hasTokens = !!session.tokens?.idToken;
+    if (this.initAuthPromise) {
+      return this.initAuthPromise;
+    }
 
-      if (!hasTokens) {
-        return;
+    this.initAuthPromise = (async () => {
+      try {
+        const session = await fetchAuthSession();
+        const hasTokens = !!session.tokens?.idToken;
+
+        if (!hasTokens) {
+          this.setUnauthenticated();
+          return;
+        }
+
+        const user = await getCurrentUser();
+        const userProfile = await this.buildUserProfile(user, session);
+        const claims = session.tokens?.idToken?.payload ?? null;
+        const groups = this.extractGroups(claims);
+
+        this.currentUserSubject.next(userProfile);
+        this.setAuthenticated({ claims, groups });
+      } catch {
+        this.setUnauthenticated();
       }
+    })().finally(() => {
+      // Important: never remain unknown after initAuth completes in browser.
+      if (this.authStatusSubject.value === 'unknown') {
+        this.setUnauthenticated();
+      }
+    });
 
-      const user = await getCurrentUser();
-      const userProfile = await this.buildUserProfile(user, session);
-      const claims = session.tokens?.idToken?.payload ?? null;
-      const groups = this.extractGroups(claims);
+    return this.initAuthPromise;
+  }
 
-      this.currentUserSubject.next(userProfile);
-      this.isAuthenticatedSubject.next(true);
-      this.authStateSubject.next({
-        authenticated: true,
-        claims,
-        groups,
-        pendingChallenge: null,
-        pendingEmail: null
-      });
-    } catch (error) {
-      this.resetState();
-    }
+  /** Backwards-compat alias: guards used to call this. */
+  async checkAuthState(): Promise<void> {
+    await this.initAuth();
   }
 
   private async buildUserProfile(user: any, session: any): Promise<UserProfile> {
@@ -165,7 +205,19 @@ export class AuthService {
 
   // Synchronous read for guards/interceptor
   isAuthenticatedSync(): boolean {
-    return this.authStateSubject.value.authenticated;
+    return this.authStatusSubject.value === 'authenticated';
+  }
+
+  authStatusSync(): AuthStatus {
+    return this.authStatusSubject.value;
+  }
+
+  /** Emits once auth status is resolved (not 'unknown'). */
+  whenResolved$(): Observable<AuthStatus> {
+    return this.authStatus$.pipe(
+      filter(status => status !== 'unknown'),
+      take(1)
+    );
   }
 
   getCurrentUserRole(): UserRole | null {
@@ -191,8 +243,10 @@ export class AuthService {
           claims: null,
           groups: [],
           pendingChallenge: 'NEW_PASSWORD_REQUIRED',
-          pendingEmail: email
+          pendingEmail: email,
+          authStatus: 'unauthenticated'
         });
+        this.authStatusSubject.next('unauthenticated');
         return 'NEW_PASSWORD_REQUIRED';
       }
 
@@ -269,11 +323,11 @@ export class AuthService {
   }
 
   getIdToken(): Observable<string | null> {
-  return from(fetchAuthSession()).pipe(
-    map(session => session?.tokens?.idToken?.toString() || null),
-    catchError(() => of(null))
-  );
-}
+    return from(fetchAuthSession()).pipe(
+      map(session => session?.tokens?.idToken?.toString() || null),
+      catchError(() => of(null))
+    );
+  }
 
 
   getAccessToken(): Observable<string | null> {
@@ -307,7 +361,7 @@ export class AuthService {
     try {
       await signOut();
     } finally {
-      this.resetState();
+      this.setUnauthenticated();
     }
   }
 
@@ -326,31 +380,37 @@ export class AuthService {
     const userProfile = await this.buildUserProfile(user, session);
 
     this.currentUserSubject.next(userProfile);
-    this.isAuthenticatedSubject.next(true);
+    this.setAuthenticated({ claims, groups });
+  }
+
+  private setAuthenticated(input: { claims: any | null; groups: string[] }): void {
+    this.authStatusSubject.next('authenticated');
     this.authStateSubject.next({
       authenticated: true,
-      claims,
-      groups,
+      claims: input.claims,
+      groups: input.groups,
       pendingChallenge: null,
-      pendingEmail: null
+      pendingEmail: null,
+      authStatus: 'authenticated'
     });
   }
 
-  private resetState(): void {
+  private setUnauthenticated(): void {
     this.currentUserSubject.next(null);
-    this.isAuthenticatedSubject.next(false);
+    this.authStatusSubject.next('unauthenticated');
     this.authStateSubject.next({
       authenticated: false,
       claims: null,
       groups: [],
       pendingChallenge: null,
-      pendingEmail: null
+      pendingEmail: null,
+      authStatus: 'unauthenticated'
     });
     this.applyDefaultThemeWhenSignedOut();
   }
 
   private applyDefaultThemeWhenSignedOut(): void {
-    if (this.isAuthenticatedSubject.value) {
+    if (this.authStatusSubject.value === 'authenticated') {
       return;
     }
     this.themeService.applyTheme(null);

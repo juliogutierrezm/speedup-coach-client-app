@@ -3,21 +3,18 @@ import {
   HttpInterceptor,
   HttpRequest,
   HttpHandler,
-  HttpEvent,
-  HttpErrorResponse
+  HttpEvent
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
-import { Router } from '@angular/router';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
 
   constructor(
-    private authService: AuthService,
-    private router: Router
+    private authService: AuthService
   ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
@@ -28,20 +25,12 @@ export class AuthInterceptor implements HttpInterceptor {
       return next.handle(req);
     }
 
-    // Usuario no autenticado
-    if (!this.authService.isAuthenticatedSync()) {
-      this.authService.signOut();
-      this.router.navigate(['/login']);
-      return throwError(() => new Error('Unauthorized'));
-    }
-
-    // 👉 CAMBIO CLAVE: usar ID TOKEN
+    // NOTE: no redirects here. Interceptor must be side-effect free.
+    // Attach token if available.
     return this.authService.getIdToken().pipe(
       switchMap(token => {
         if (!token) {
-          this.authService.signOut();
-          this.router.navigate(['/login']);
-          return throwError(() => new Error('Unauthorized'));
+          return next.handle(req);
         }
 
         const authReq = req.clone({
@@ -62,10 +51,15 @@ export class AuthInterceptor implements HttpInterceptor {
   }
 
   private handleApiError(err: any): Observable<never> {
-    if (err instanceof HttpErrorResponse && (err.status === 401 || err.status === 403)) {
-      this.authService.signOut();
-      this.router.navigate(['/login']);
-    }
+    // If needed in the future, detect 401/403 here and only then sign out
+    // *after* auth is resolved, but still without navigation.
+    // Example:
+    // if (err instanceof HttpErrorResponse && (err.status === 401 || err.status === 403) && this.authService.authStatusSync() === 'authenticated') {
+    //   void this.authService.signOut();
+    // }
+    // Placeholder for future: when status is resolved and token invalid, we could trigger a signOut.
+    // Requirement: never navigate from interceptor.
+    // No navigation here. Let the UI decide what to do with 401/403.
     return throwError(() => err);
   }
 }

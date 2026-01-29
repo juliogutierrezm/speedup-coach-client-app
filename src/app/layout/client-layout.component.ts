@@ -43,20 +43,13 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Wait for auth to be fully initialized before loading theme
-    this.authService.authState$
+    this.authService.authStatus$
       .pipe(
-        filter(state => state.authenticated),
+        filter(status => status === 'authenticated'),
         take(1),
         takeUntil(this.destroy$)
       )
-      .subscribe(() => {
-        this.loadTenantTheme();
-      });
-
-    // If already authenticated, load immediately
-    if (this.authService.isAuthenticatedSync()) {
-      this.loadTenantTheme();
-    }
+      .subscribe(() => this.loadTenantTheme());
   }
 
   ngOnDestroy(): void {

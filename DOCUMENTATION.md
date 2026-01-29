@@ -11,8 +11,8 @@ Esta aplicacion cliente en Angular 19 ofrece la interfaz principal que ve un `Cl
 - **Tailwind/PostCSS** en `styles.scss` y `tailwind.config.js` para utilidades visuales.
 
 ## Rutas, autenticacion y layout
-- `src/app/app.routes.ts` monta las rutas publicas (`/login`, `/callback`, `/unauthorized`) y anida `clientRoutes` debajo de `ClientLayoutComponent`.
-- `AuthGuard` (`src/app/guards/auth.guard.ts`) valida la sesion antes de activar las rutas y fuerza el redirect al Hosted UI cuando hace falta.
+- `src/app/app.routes.ts` monta las rutas publicas (`/login`, `/forgot-password`, `/change-password`, `/unauthorized`) y anida `clientRoutes` debajo de `ClientLayoutComponent`.
+- `AuthGuard` (`src/app/guards/auth.guard.ts`) valida la sesion antes de activar las rutas. Mientras el estado es `unknown`, la app muestra un splash neutral y bloquea la navegacion inicial hasta resolver la sesion.
 - `AuthInterceptor` (`src/app/interceptors/auth.interceptor.ts`) adjunta el `Authorization: Bearer <token>` a cada llamada que toca `environment.apiBase` y evita tocar assets o endpoints publicos.
 - `ClientLayoutComponent` (`src/app/layout/client-layout.component.ts`) carga temas por tenant, expone controles de drawer, muestra mensajes de estado y llama a `AuthService.signOut()`.
 
@@ -35,8 +35,8 @@ Cada componente depende de `ClientDataService` y sigue patrones de carga (`isLoa
 - `session-exercise.utils.ts` define `SessionExercise` y helpers (`flattenSessionItems`, `getSessionExerciseCount`, `hasFunctionalExercise`) para normalizar y contar ejercicios incluso cuando llegan drivers de superseries.
 
 ## Configuraciones de entorno y deployment
-- `src/environments/environment.ts`, `.test.ts` y `.prod.ts` apuntan al mismo API Gateway (`https://k2ok2k1ft9.execute-api.us-east-1.amazonaws.com/{dev|prod}`) y contienen la informacion de Cognito (dominio, `clientId`, `userPoolId`, `redirectUri`).
-- `src/aws-exports.ts` repite la configuracion de Amplify usada por `AuthService` y debe mantenerse sincronizada con los valores de Cognito.
+- `src/environments/environment.ts`, `.test.ts` y `.prod.ts` apuntan al mismo API Gateway (`https://k2ok2k1ft9.execute-api.us-east-1.amazonaws.com/{dev|prod}`).
+- `src/aws-exports.ts` contiene la configuracion de Amplify usada por `AuthService` (User Pool + App Client) para el flujo de login custom.
 
 ## Flujo de desarrollo y scripts
 1. `npm install` instala dependencias Angular, Amplify y herramientas de testing.
@@ -48,7 +48,7 @@ Cada componente depende de `ClientDataService` y sigue patrones de carga (`isLoa
 
 ## Despliegue y SSR
 - El artefacto final se publica debajo de `dist/speedup-coach-client`; `src/server.ts` sirve los assets estaticos con `express.static` y utiliza `AngularNodeAppEngine` para renderizar el resto.
-- La ruta `/callback` recibe la respuesta de Cognito y `AuthService` reconstruye el perfil a partir de los tokens.
+- El flujo de autenticacion es 100% con UI custom: no se usa Cognito Hosted UI ni rutas `/callback`.
 
 ## Observabilidad y buenas practicas
 - Los componentes y servicios registran errores con contexto (`[ClientPlans]`, `[ThemeService]`, etc.) y calculan tiempos transcurridos usando referencias de `performance.now()`.

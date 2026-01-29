@@ -9,17 +9,6 @@ export const awsExports = {
   // 🔥 NUEVO APP CLIENT (client-only)
   aws_user_pools_web_client_id: '7hdpq9lbf0km3noeglgmg26cpm',
 
-  oauth: {
-    domain: 'fitness-planner-dev-auth.auth.us-east-1.amazoncognito.com',
-    scope: ['email', 'openid', 'profile'],
-
-    // 🔥 PUERTO DE LA CLIENT APP
-    redirectSignIn: 'http://localhost:4300/callback',
-    redirectSignOut: 'http://localhost:4300/login',
-
-    responseType: 'code'
-  },
-
   federationTarget: 'COGNITO_USER_POOLS',
   aws_cognito_username_attributes: ['email'],
   aws_cognito_social_providers: [],

@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthError, AuthService } from '../../services/auth.service';
 
@@ -24,6 +24,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
     private fb: FormBuilder
   ) {
     this.form = this.fb.group({
@@ -35,7 +36,8 @@ export class LoginComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.sub = this.authService.isAuthenticated$.subscribe(isAuth => {
       if (isAuth) {
-        this.router.navigate(['/plans']);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        this.router.navigateByUrl(returnUrl || '/plans');
       }
     });
   }
@@ -63,7 +65,8 @@ export class LoginComponent implements OnInit, OnDestroy {
         return;
       }
       this.loading = false;
-      this.router.navigate(['/plans']);
+      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+      this.router.navigateByUrl(returnUrl || '/plans');
     } catch (err) {
       const e = err as AuthError;
       this.error = this.mapError(e?.code);

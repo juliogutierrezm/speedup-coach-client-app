@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, CanActivateChild, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
-import { Observable, of, from } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { CanActivate, CanActivateChild, ActivatedRouteSnapshot, RouterStateSnapshot, Router, UrlTree } from '@angular/router';
+import { Observable, from, map, switchMap } from 'rxjs';
 import { AuthService, UserRole } from '../services/auth.service';
+import { of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -17,41 +17,41 @@ export class AuthGuard implements CanActivate, CanActivateChild {
   canActivate(
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
-  ): Observable<boolean> {
-    return this.checkAuth(route);
+  ): Observable<boolean | UrlTree> {
+    return this.checkAuth(route, state.url);
   }
 
   canActivateChild(
     childRoute: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
-  ): Observable<boolean> {
-    return this.checkAuth(childRoute);
+  ): Observable<boolean | UrlTree> {
+    return this.checkAuth(childRoute, state.url);
   }
 
-  private checkAuth(route: ActivatedRouteSnapshot): Observable<boolean> {
-    // If ya estamos autenticados, evita re-invocar checkAuthState en cada navegación
-    if (this.authService.isAuthenticatedSync()) {
-      return of(this.evaluateAccess(route));
+  private checkAuth(route: ActivatedRouteSnapshot, url: string): Observable<boolean | UrlTree> {
+    // SSR/build-time: we don't have browser auth state; avoid blocking initial navigation.
+    if (typeof window === 'undefined') {
+      return of(true);
     }
 
-    // Si no hay estado, sincroniza una sola vez
-    return from(this.authService.checkAuthState()).pipe(
-      switchMap(() => of(this.evaluateAccess(route)))
+    // Ensure initAuth was called (idempotent).
+    return from(this.authService.initAuth()).pipe(
+      switchMap(() => this.authService.whenResolved$()),
+      map(() => this.evaluateAccess(route, url))
     );
   }
 
-  private evaluateAccess(route: ActivatedRouteSnapshot): boolean {
+  private evaluateAccess(route: ActivatedRouteSnapshot, url: string): boolean | UrlTree {
     // Check if authenticated
     if (!this.authService.isAuthenticatedSync()) {
-      this.router.navigate(['/login']);
-      return false;
+      return this.router.createUrlTree(['/login'], {
+        queryParams: { returnUrl: url }
+      });
     }
 
     // Check if user has Client group
     if (!this.authService.hasClientGroup()) {
-      this.authService.signOut();
-      this.router.navigate(['/login'], { state: { reason: 'unauthorized' } });
-      return false;
+      return this.router.createUrlTree(['/unauthorized']);
     }
 
     // Check role if required
@@ -59,9 +59,7 @@ export class AuthGuard implements CanActivate, CanActivateChild {
     if (requiredRoles && requiredRoles.length > 0) {
       const user = this.authService.getCurrentUser();
       if (!user || !requiredRoles.includes(user.role)) {
-        this.authService.signOut();
-        this.router.navigate(['/login'], { state: { reason: 'unauthorized' } });
-        return false;
+        return this.router.createUrlTree(['/unauthorized']);
       }
     }
 

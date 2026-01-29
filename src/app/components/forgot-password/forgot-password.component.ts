@@ -81,7 +81,7 @@ export class ForgotPasswordComponent {
     try {
       await this.authService.forgotPasswordSubmit(email, code!, newPassword!);
       this.success = 'Contraseña actualizada. Inicia sesión con tu nueva contraseña.';
-      setTimeout(() => this.router.navigate(['/login']), 600);
+      this.router.navigate(['/login']);
     } catch (err) {
       const e = err as AuthError;
       this.error = this.mapError(e.code);

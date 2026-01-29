@@ -1,21 +1,31 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { AuthService, AuthStatus } from './services/auth.service';
+import { SplashComponent } from './components/splash/splash.component';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
-    RouterModule
+    RouterModule,
+    SplashComponent
   ],
-  template: `<router-outlet></router-outlet>`
+  template: `
+    <app-splash *ngIf="(authStatus$ | async) === 'unknown'; else appContent"></app-splash>
+    <ng-template #appContent>
+      <router-outlet></router-outlet>
+    </ng-template>
+  `
 })
-export class AppComponent implements OnInit {
-  constructor() {}
+export class AppComponent {
+  authStatus$: Observable<AuthStatus>;
 
-  async ngOnInit() {
-    // Auth state is resolved by guards when needed
+  constructor(private authService: AuthService) {
+    this.authStatus$ = this.authService.authStatus$;
   }
 }
+
 
