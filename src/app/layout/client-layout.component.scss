@@ -192,10 +192,7 @@
   flex: 1;
   width: 100%;
   max-width: 1480px;
-  margin: 0 auto;
-
   padding-top: calc(var(--header-height) + 1.5rem);
-  padding-inline: 1.25rem;
   padding-bottom: 2.5rem;
 
   display: flex;
@@ -277,10 +274,7 @@
   justify-content: center;
 }
 
-.client-content-shell {
-  width: min(1100px, 100%);
-  padding: clamp(1.5rem, 3vw, 2.3rem);
-}
+
 
 @media (min-width: 1024px) {
   .menu-button {

@@ -56,6 +56,7 @@
         <span class="latest-chip">Resumen actual</span>
       </div>
 
+      <!-- Primary metrics row -->
       <div class="latest-grid">
         <article class="metric-card">
           <span class="metric-label">Peso</span>
@@ -70,8 +71,32 @@
           <span class="metric-value">{{ formatMetricValue(latest.muscleMassKg, 'kg', 1) }}</span>
         </article>
         <article class="metric-card">
+          <span class="metric-label">% musculo</span>
+          <span class="metric-value">{{ formatMetricValue(latest.musclePercentage, '%', 1) }}</span>
+        </article>
+      </div>
+
+      <!-- Secondary metrics row -->
+      <div class="latest-grid latest-grid--secondary">
+        <article class="metric-card metric-card--secondary">
+          <span class="metric-label">Grasa visceral</span>
+          <span class="metric-value">{{ formatMetricValue(latest.visceralFatLevel, 'nivel', 0) }}</span>
+        </article>
+        <article class="metric-card metric-card--secondary">
           <span class="metric-label">Edad metabolica</span>
           <span class="metric-value">{{ formatMetricValue(latest.metabolicAge, 'anos', 0) }}</span>
+        </article>
+        <article class="metric-card metric-card--secondary">
+          <span class="metric-label">IMC</span>
+          <span class="metric-value">{{ formatMetricValue(latest.bmi, '', 1) }}</span>
+        </article>
+        <article class="metric-card metric-card--secondary">
+          <span class="metric-label">TMB</span>
+          <span class="metric-value">{{ formatMetricValue(latest.basalMetabolicRate, 'kcal', 0) }}</span>
+        </article>
+        <article class="metric-card metric-card--secondary" *ngIf="latest.heightCm">
+          <span class="metric-label">Altura</span>
+          <span class="metric-value">{{ formatMetricValue(latest.heightCm, 'cm', 0) }}</span>
         </article>
       </div>
     </section>
@@ -122,32 +147,38 @@
         <span class="history-chip">{{ metricsDesc.length }} registros</span>
       </div>
 
-      <div class="history-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Peso</th>
-              <th>% grasa</th>
-              <th>Masa muscular</th>
-              <th>Edad metabolica</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let metric of metricsDesc; trackBy: trackByMetric">
-              <td>{{ formatDisplayDate(metric.measurementDate) }}</td>
-              <td>{{ formatMetricValue(metric.weightKg, 'kg', 1) }}</td>
-              <td>{{ formatMetricValue(metric.bodyFatPercentage, '%', 1) }}</td>
-              <td>{{ formatMetricValue(metric.muscleMassKg, 'kg', 1) }}</td>
-              <td>{{ formatMetricValue(metric.metabolicAge, 'anos', 0) }}</td>
-            </tr>
-            <tr *ngIf="!metricsDesc.length">
-              <td colspan="5" class="history-empty">
-                Sin registros disponibles.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="history-table-wrapper">
+        <div class="history-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Peso</th>
+                <th>% grasa</th>
+                <th>Musculo</th>
+                <th>Visceral</th>
+                <th>IMC</th>
+                <th>E. Met.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let metric of metricsDesc; trackBy: trackByMetric">
+                <td data-label="Fecha">{{ formatDisplayDate(metric.measurementDate) }}</td>
+                <td data-label="Peso">{{ formatMetricValue(metric.weightKg, 'kg', 1) }}</td>
+                <td data-label="% grasa">{{ formatMetricValue(metric.bodyFatPercentage, '%', 1) }}</td>
+                <td data-label="Musculo">{{ formatMetricValue(metric.muscleMassKg, 'kg', 1) }}</td>
+                <td data-label="Visceral">{{ formatMetricValue(metric.visceralFatLevel, '', 0) }}</td>
+                <td data-label="IMC">{{ formatMetricValue(metric.bmi, '', 1) }}</td>
+                <td data-label="E. Met.">{{ formatMetricValue(metric.metabolicAge, '', 0) }}</td>
+              </tr>
+              <tr *ngIf="!metricsDesc.length">
+                <td colspan="7" class="history-empty">
+                  Sin registros disponibles.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </ng-container>
