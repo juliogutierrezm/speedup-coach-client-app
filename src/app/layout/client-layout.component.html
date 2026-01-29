@@ -3,18 +3,33 @@
   [class.is-dark]="isDark"
   [ngStyle]="themeTokens"
 >
-  <div
-    class="client-loading"
-    *ngIf="isThemeLoading"
-    role="status"
-    aria-live="polite"
-    [attr.aria-busy]="isThemeLoading"
-  >
-    <div class="app-spinner" aria-hidden="true"></div>
-    <p>Cargando tu experiencia...</p>
-  </div>
+  <ng-container *ngIf="initState$ | async as initState">
 
-  <ng-container *ngIf="!isThemeLoading">
+    <!-- Loading screen (no router-outlet instantiation) -->
+    <div
+      class="client-loading"
+      *ngIf="initState === 'loading'"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div class="client-loading__content">
+        <div class="app-spinner" aria-hidden="true"></div>
+        <p class="client-loading__text">Cargando tu experiencia...</p>
+      </div>
+    </div>
+
+    <!-- Error screen (retry truly retries) -->
+    <div class="client-loading" *ngIf="initState === 'error'" role="status" aria-live="polite">
+      <div class="client-loading__content">
+        <p class="client-loading__title">No pudimos cargar tu información.</p>
+        <p class="client-loading__text" *ngIf="(initError$ | async) as err">{{ err }}</p>
+        <button type="button" class="client-loading__retry" (click)="retryInit()">Reintentar</button>
+      </div>
+    </div>
+
+    <!-- Ready: render full client shell -->
+    <ng-container *ngIf="initState === 'ready'">
 
     <header
       class="client-header"
@@ -178,5 +193,7 @@
 
       </div>
     </div>
+    </ng-container>
+
   </ng-container>
 </div>

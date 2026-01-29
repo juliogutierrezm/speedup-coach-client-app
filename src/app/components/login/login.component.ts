@@ -1,8 +1,7 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
 import { AuthError, AuthService } from '../../services/auth.service';
 
 @Component({
@@ -15,10 +14,9 @@ import { AuthError, AuthService } from '../../services/auth.service';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
-export class LoginComponent implements OnInit, OnDestroy {
+export class LoginComponent {
   loading = false;
   error: string | null = null;
-  private sub?: Subscription;
   form!: FormGroup;
 
   constructor(
@@ -31,20 +29,6 @@ export class LoginComponent implements OnInit, OnDestroy {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
     });
-  }
-
-  ngOnInit() {
-    this.sub = this.authService.isAuthenticated$.subscribe(isAuth => {
-      if (isAuth) {
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        this.router.navigateByUrl(returnUrl || '/plans');
-      }
-    });
-  }
-
-
-  ngOnDestroy(): void {
-    this.sub?.unsubscribe();
   }
 
   async onSubmit() {

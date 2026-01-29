@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { catchError, map, shareReplay, tap } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { catchError, map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { ThemeService, TenantTheme } from './theme.service';
+import { TenantTheme } from './theme.service';
 import { BodyMetric } from '../models/body-metric.model';
 
 /* ============================
@@ -82,8 +82,7 @@ export class ClientDataService {
   private clientData$?: Observable<ClientDataResponse>;
 
   constructor(
-    private http: HttpClient,
-    private themeService: ThemeService
+    private http: HttpClient
   ) {}
 
   /**
@@ -93,16 +92,18 @@ export class ClientDataService {
    * Error handling: returns safe empty structure on errors and applies default theme.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
-  getClientData(): Observable<ClientDataResponse> {
+  getClientData(options?: { force?: boolean }): Observable<ClientDataResponse> {
+    const force = !!options?.force;
+
+    if (force) {
+      this.clearCache();
+    }
+
     if (this.clientData$) {
       return this.clientData$;
     }
 
-    const startedAt = this.getNowMs();
     this.clientData$ = this.http.get<ClientDataResponse>(this.clientUrl).pipe(
-      tap(res => {
-        this.themeService.applyTheme(res?.theme ?? null);
-      }),
       map(res => {
         const user = res?.user || ({} as ClientProfile);
         const trainerName = user.trainerName || res?.trainerName || '';
@@ -117,13 +118,24 @@ export class ClientDataService {
         };
       }),
       catchError(error => {
-        this.themeService.applyTheme(null);
-        return of({ user: {} as ClientProfile, plans: [], bodyMetrics: [], theme: null });
+        // Important: no cache "poisoning". Allow true retry.
+        this.clientData$ = undefined;
+        return throwError(() => error);
       }),
+      // Nota: en RxJS de este repo no está disponible resetOnError en ShareReplayConfig.
+      // La estrategia anti-poisoning la garantizamos limpiando this.clientData$ en catchError.
       shareReplay(1)
     );
 
     return this.clientData$;
+  }
+
+  /**
+   * Limpia el cache en memoria.
+   * Usado por init/reset/signOut y por reintentos deterministas.
+   */
+  clearCache(): void {
+    this.clientData$ = undefined;
   }
 
   /**

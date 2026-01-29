@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import { from, of, Subject } from 'rxjs';
-import { catchError, filter, finalize, take, takeUntil, tap } from 'rxjs/operators';
+import { from, Subject } from 'rxjs';
+import { filter, finalize, takeUntil, tap } from 'rxjs/operators';
 import { ThemeService, TenantTheme } from '../services/theme.service';
 import { AuthService } from '../services/auth.service';
-import { ClientDataService } from '../services/client-data.service';
+import { ClientAppInitService } from '../services/client-app-init.service';
 import { environment } from '../../environments/environment';
 
 type StatusTone = 'info' | 'success' | 'error';
@@ -19,7 +19,6 @@ type StatusTone = 'info' | 'success' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClientLayoutComponent implements OnInit, OnDestroy {
-  isThemeLoading = true;
   isSigningOut = false;
   isDark = false;
   drawerOpen = false;
@@ -30,26 +29,46 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
   statusMessage = '';
   statusTone: StatusTone = 'info';
 
+  // Nota: no inicializar propiedades con `this.clientAppInit` antes del constructor.
+  // En AOT esto causa: "Property is used before its initialization".
+  get initState$() {
+    return this.clientAppInit.state$;
+  }
+
+  get initError$() {
+    return this.clientAppInit.error$;
+  }
+
   private destroy$ = new Subject<void>();
   private statusTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private themeService: ThemeService,
     private authService: AuthService,
-    private clientDataService: ClientDataService,
+    private clientAppInit: ClientAppInitService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    // Wait for auth to be fully initialized before loading theme
+    // 1) Disparar init post-auth (idempotente)
     this.authService.authStatus$
       .pipe(
         filter(status => status === 'authenticated'),
-        take(1),
         takeUntil(this.destroy$)
       )
-      .subscribe(() => this.loadTenantTheme());
+      .subscribe(() => {
+        void this.clientAppInit.initClientData();
+      });
+
+    // 2) React a cambios de theme ya aplicado (ClientAppInit aplica ThemeService.applyTheme)
+    this.themeService.tenantTheme$
+      .pipe(
+        filter((theme): theme is TenantTheme => !!theme),
+        tap(theme => this.applyThemeSnapshot(theme)),
+        takeUntil(this.destroy$)
+      )
+      .subscribe();
   }
 
   ngOnDestroy(): void {
@@ -112,6 +131,10 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
       });
   }
 
+  retryInit(): void {
+    void this.clientAppInit.initClientData({ force: true });
+  }
+
   onDebugThemeToggle(enabled: boolean): void {
     if (!this.currentTheme) {
       return;
@@ -124,34 +147,6 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
       ...this.currentTheme,
       backgroundMode
     });
-  }
-
-  private loadTenantTheme(): void {
-    const startedAt = this.getNowMs();
-    this.isThemeLoading = true;
-    this.cdr.markForCheck();
-
-    this.clientDataService.getClientData()
-      .pipe(
-        catchError(error => {
-          this.handleThemeLoadError(error, startedAt);
-          return of(null);
-        }),
-        finalize(() => {
-          this.isThemeLoading = false;
-          this.cdr.markForCheck();
-        }),
-        takeUntil(this.destroy$)
-      )
-      .subscribe();
-    
-    this.themeService.tenantTheme$
-      .pipe(
-        filter((theme): theme is TenantTheme => !!theme),
-        tap(theme => this.applyThemeSnapshot(theme)),
-        takeUntil(this.destroy$)
-      )
-      .subscribe();
   }
 
   private applyThemeSnapshot(theme: TenantTheme): void {
@@ -173,21 +168,6 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
     };
 
     this.cdr.markForCheck();
-  }
-
-  private handleThemeLoadError(error: any, startedAt: number): void {
-    const elapsedMs = this.getElapsedMs(startedAt);
-    console.error('[ClientLayout] tenant theme load failed', { elapsedMs, error });
-    this.showStatus(this.getThemeErrorMessage(error), 'error');
-  }
-
-  private getThemeErrorMessage(error: any): string {
-    const status = error?.status;
-    if (status === 400) return 'No se pudo validar el tema del tenant.';
-    if (status === 401 || status === 403) return 'No tienes permisos para cargar el tema.';
-    if (status === 404) return 'No encontramos un tema configurado.';
-    if (status >= 500) return 'El servidor no pudo entregar el tema.';
-    return 'No se pudo cargar el tema. Usando valores por defecto.';
   }
 
   private showStatus(message: string, tone: StatusTone): void {
@@ -225,6 +205,14 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
     };
   }
 
+  private setHtmlDarkClass(enabled: boolean): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    document.documentElement.classList.toggle('dark', enabled);
+  }
+
   private getNowMs(): number {
     return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
   }
@@ -233,14 +221,6 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
     const now = this.getNowMs();
     const elapsed = now - startedAt;
     return Number.isFinite(elapsed) ? Math.round(elapsed) : 0;
-  }
-
-  private setHtmlDarkClass(enabled: boolean): void {
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    document.documentElement.classList.toggle('dark', enabled);
   }
 
   private colorToRgb(color: string, fallback: string): string {
