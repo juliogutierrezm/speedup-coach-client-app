@@ -18,6 +18,7 @@ export class LoginComponent {
   loading = false;
   error: string | null = null;
   form!: FormGroup;
+  showPassword = false;
 
   constructor(
     private authService: AuthService,
@@ -29,6 +30,10 @@ export class LoginComponent {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
     });
+  }
+
+  togglePassword(): void {
+    this.showPassword = !this.showPassword;
   }
 
   async onSubmit() {

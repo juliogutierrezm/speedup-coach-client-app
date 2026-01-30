@@ -1,23 +1,42 @@
 .exercise-video-page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 1.25rem;
 }
+
+/* ================= HEADER ================= */
 
 .video-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 22px;
+  border: 1px solid var(--c-border);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--color-primary) / 0.1),
+    rgb(var(--color-accent) / 0.08)
+  );
+  box-shadow: var(--c-shadow);
 }
 
 .nav-back {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  border: 1px solid rgba(17, 24, 39, 0.2);
-  background: var(--c-surface, #ffffff);
-  font-size: 18px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--c-border);
+  background: var(--surface-base);
+  color: var(--c-text);
+  font-size: 1.2rem;
   cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.nav-back:hover {
+  transform: translateY(-2px);
+  border-color: var(--c-accent);
+  box-shadow: 0 4px 12px rgb(var(--color-accent) / 0.2);
 }
 
 .video-header-text {
@@ -27,23 +46,29 @@
 
 .video-eyebrow {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--c-muted, rgba(17, 24, 39, 0.5));
+  letter-spacing: 0.35em;
+  font-weight: 700;
+  color: var(--c-muted);
 }
 
 .video-title {
-  margin: 4px 0 0;
-  font-size: 22px;
+  margin: 0.25rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--c-text);
 }
 
+/* ================= STATES ================= */
+
 .video-error {
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(220, 38, 38, 0.35);
-  background: rgba(248, 113, 113, 0.1);
-  color: #b91c1c;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgb(220 38 38 / 0.35);
+  background: rgb(254 226 226 / 0.15);
+  color: var(--c-text);
   font-weight: 500;
 }
 
@@ -51,22 +76,41 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 20px 0;
-  color: var(--c-muted, rgba(17, 24, 39, 0.6));
+  gap: 0.65rem;
+  padding: 1.5rem 0;
+  color: var(--c-muted);
 }
 
+/* ================= VIDEO FRAME ================= */
+
 .video-frame {
-  border-radius: 16px;
-  border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
-  background: var(--c-surface, #ffffff);
-  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid var(--c-border);
+  background: var(--surface-base);
+  padding: 1rem;
+  box-shadow: var(--c-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.video-frame::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--c-primary),
+    var(--c-accent)
+  );
 }
 
 .video-frame video {
   width: 100%;
-  min-height: 320px;
-  border-radius: 12px;
+  min-height: 280px;
+  border-radius: 14px;
   background: #000;
   display: block;
 }
@@ -76,29 +120,49 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  color: var(--c-muted, rgba(17, 24, 39, 0.6));
+  font-size: 0.9rem;
+  color: var(--c-muted);
+  border-radius: 14px;
+  background: var(--surface-soft);
 }
 
 .video-missing {
-  padding: 18px;
-  border-radius: 12px;
-  border: 1px dashed var(--c-border, rgba(0, 0, 0, 0.1));
-  background-color: var(--c-surface-2, rgba(17, 24, 39, 0.03));
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px dashed var(--c-border);
+  background: var(--surface-soft);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  color: var(--c-muted, rgba(17, 24, 39, 0.6));
+  gap: 0.75rem;
+  color: var(--c-muted);
   text-align: center;
 }
 
+/* ================= BUTTON ================= */
+
 .client-button {
-  padding: 10px 16px;
-  border-radius: 6px;
-  border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
-  background: var(--c-surface, #ffffff);
-  color: var(--c-text, #111827);
+  padding: 0.65rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid var(--c-accent);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--color-primary) / 0.1),
+    rgb(var(--color-accent) / 0.08)
+  );
+  color: var(--c-text);
   font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.client-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgb(var(--color-accent) / 0.25);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--color-primary) / 0.18),
+    rgb(var(--color-accent) / 0.14)
+  );
 }

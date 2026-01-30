@@ -17,6 +17,8 @@ export class ForgotPasswordComponent {
   error: string | null = null;
   success: string | null = null;
   emailForReset: string | null = null;
+  showNewPassword = false;
+  showConfirmPassword = false;
 
   requestForm!: FormGroup;
 
@@ -36,6 +38,14 @@ export class ForgotPasswordComponent {
       newPassword: ['', [Validators.required, Validators.minLength(8), this.passwordPolicyValidator]],
       confirmPassword: ['', [Validators.required]]
     });
+  }
+
+  toggleNewPassword(): void {
+    this.showNewPassword = !this.showNewPassword;
+  }
+
+  toggleConfirmPassword(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
   }
 
   async sendCode() {

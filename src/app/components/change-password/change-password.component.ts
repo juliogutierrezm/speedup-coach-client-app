@@ -17,6 +17,8 @@ export class ChangePasswordComponent implements OnInit, OnDestroy {
 
   loading = false;
   error: string | null = null;
+  showNewPassword = false;
+  showConfirmPassword = false;
   private sub?: Subscription;
 
   constructor(
@@ -28,6 +30,14 @@ export class ChangePasswordComponent implements OnInit, OnDestroy {
       newPassword: ['', [Validators.required, Validators.minLength(8), this.passwordPolicyValidator]],
       confirmPassword: ['', [Validators.required]]
     });
+  }
+
+  toggleNewPassword(): void {
+    this.showNewPassword = !this.showNewPassword;
+  }
+
+  toggleConfirmPassword(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
   }
 
   ngOnInit(): void {
