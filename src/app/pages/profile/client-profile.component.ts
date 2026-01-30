@@ -9,6 +9,7 @@ import { ClientDataService } from '../../services/client-data.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './client-profile.component.html',
+  styleUrl: './client-profile.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClientProfileComponent implements OnInit, OnDestroy {

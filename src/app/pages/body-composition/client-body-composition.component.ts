@@ -282,6 +282,22 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy, AfterV
   }
 
   /**
+   * Purpose: format ISO dates in short format for compact table display.
+   * Input: ISO date string. Output: dd/MM/yy or placeholder.
+   * Error handling: returns placeholder on invalid date input.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  formatShortDate(dateString?: string): string {
+    const timestamp = this.getMetricTimestamp(dateString);
+    if (!timestamp) {
+      return '-';
+    }
+    const date = new Date(timestamp);
+    const year = date.getFullYear().toString().slice(-2);
+    return `${this.pad2(date.getDate())}/${this.pad2(date.getMonth() + 1)}/${year}`;
+  }
+
+  /**
    * Purpose: load client data and hydrate charts/table.
    * Input: none. Output: void.
    * Error handling: maps error to message and keeps UI stable.

@@ -7,23 +7,6 @@
         Visualiza la evolucion de tus metricas y compara grasa vs musculo.
       </p>
     </div>
-
-    <div class="header-meta" *ngIf="clientProfile as profile">
-      <div class="meta-card">
-        <span class="meta-label">Cliente</span>
-        <span class="meta-value">
-          {{ profile.givenName || '-' }} {{ profile.familyName || '' }}
-        </span>
-      </div>
-      <div class="meta-card">
-        <span class="meta-label">Edad</span>
-        <span class="meta-value">{{ getAgeLabel(profile.dateOfBirth) }}</span>
-      </div>
-      <div class="meta-card">
-        <span class="meta-label">Trainer</span>
-        <span class="meta-value">{{ trainerName || 'Sin asignar' }}</span>
-      </div>
-    </div>
   </header>
 
   <div
@@ -153,27 +136,23 @@
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Peso</th>
-                <th>% grasa</th>
-                <th>Musculo</th>
-                <th>Visceral</th>
-                <th>IMC</th>
-                <th>E. Met.</th>
+                <th>Kg</th>
+                <th>%G</th>
+                <th>%M</th>
+                <th>M.kg</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let metric of metricsDesc; trackBy: trackByMetric">
-                <td data-label="Fecha">{{ formatDisplayDate(metric.measurementDate) }}</td>
-                <td data-label="Peso">{{ formatMetricValue(metric.weightKg, 'kg', 1) }}</td>
-                <td data-label="% grasa">{{ formatMetricValue(metric.bodyFatPercentage, '%', 1) }}</td>
-                <td data-label="Musculo">{{ formatMetricValue(metric.muscleMassKg, 'kg', 1) }}</td>
-                <td data-label="Visceral">{{ formatMetricValue(metric.visceralFatLevel, '', 0) }}</td>
-                <td data-label="IMC">{{ formatMetricValue(metric.bmi, '', 1) }}</td>
-                <td data-label="E. Met.">{{ formatMetricValue(metric.metabolicAge, '', 0) }}</td>
+                <td>{{ formatShortDate(metric.measurementDate) }}</td>
+                <td>{{ formatMetricValue(metric.weightKg, '', 1) }}</td>
+                <td>{{ formatMetricValue(metric.bodyFatPercentage, '', 1) }}</td>
+                <td>{{ formatMetricValue(metric.musclePercentage, '', 1) }}</td>
+                <td>{{ formatMetricValue(metric.muscleMassKg, '', 1) }}</td>
               </tr>
               <tr *ngIf="!metricsDesc.length">
-                <td colspan="7" class="history-empty">
-                  Sin registros disponibles.
+                <td colspan="5" class="history-empty">
+                  Sin registros.
                 </td>
               </tr>
             </tbody>
