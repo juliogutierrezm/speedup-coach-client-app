@@ -6,7 +6,6 @@ import { filter, finalize, takeUntil, tap } from 'rxjs/operators';
 import { ThemeService, TenantTheme } from '../services/theme.service';
 import { AuthService } from '../services/auth.service';
 import { ClientAppInitService } from '../services/client-app-init.service';
-import { environment } from '../../environments/environment';
 
 type StatusTone = 'info' | 'success' | 'error';
 
@@ -22,7 +21,7 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
   isSigningOut = false;
   isDark = false;
   drawerOpen = false;
-  debugThemeEnabled = !environment.production;
+  debugThemeEnabled = true;
   debugDarkMode = false;
   themeTokens: Record<string, string> = {};
   currentTheme: TenantTheme | null = null;
