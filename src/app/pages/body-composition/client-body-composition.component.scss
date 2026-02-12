@@ -1,7 +1,6 @@
 .body-composition-page {
   width: 100%;
-  max-width: 1120px;
-  margin: 0 auto;
+  max-width: 25rem;
   padding: 0 12px 20px;
   display: flex;
   flex-direction: column;
@@ -144,20 +143,40 @@
 
 .latest-grid {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
   width: 100%;
   box-sizing: border-box;
 }
 
+.latest-grid--secondary {
+  margin-top: 4px;
+  gap: 8px;
+}
+
 .metric-card {
-  padding: 0.85rem 0.95rem;
+  padding: 0.75rem 0.85rem;
   border-radius: 16px;
   background: var(--surface-soft);
   border: 1px solid var(--c-border);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.metric-card--secondary {
+  padding: 0.6rem 0.75rem;
+  background: transparent;
+  border: 1px solid rgba(var(--color-border-soft) / 0.5);
+}
+
+.metric-card--secondary .metric-label {
+  font-size: 0.6rem;
+}
+
+.metric-card--secondary .metric-value {
+  font-size: 0.9rem;
 }
 
 .metric-label {
@@ -177,29 +196,34 @@
 .charts-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;
 }
 
+/* CRITICAL: Always single column - no 2-column layout at any breakpoint */
 .charts-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .chart-card {
-  padding: 0.9rem 1rem 1.1rem;
-  border-radius: 22px;
+  padding: 0.875rem 1rem 1rem;
+  border-radius: 20px;
   border: 1px solid var(--c-border);
   background: var(--surface-base);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  overflow: hidden;
+  gap: 10px;
   min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
   width: 100%;
+  contain: layout style;
 }
 
 .chart-card-header {
@@ -222,31 +246,45 @@
 /* Chart container - responsive wrapper */
 .chart-card apx-chart {
   width: 100%;
-  height: auto;
-  display: block;
-  overflow: hidden;
-  box-sizing: border-box;
-  contain: layout style paint;
-}
-
-/* SVG container inside chart - critical for mobile */
-.chart-card apx-chart ::ng-deep svg {
-  width: 100%;
-  height: auto;
+  min-width: 0;
   max-width: 100%;
   display: block;
-  overflow: visible;
   box-sizing: border-box;
 }
 
-/* Ensure canvas/chart wrapper doesn't exceed bounds */
-.chart-card apx-chart ::ng-deep .apexcharts-canvas {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  box-sizing: border-box;
+/* ApexCharts internal elements - force proper sizing */
+.chart-card apx-chart ::ng-deep {
+  .apexcharts-canvas {
+    width: 100% !important;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  svg {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  foreignObject {
+    overflow: visible;
+  }
+
+  .apexcharts-legend {
+    padding: 0 !important;
+    justify-content: center;
+  }
+
+  .apexcharts-legend-series {
+    margin: 2px 6px !important;
+  }
+
+  .apexcharts-legend-text {
+    font-size: 11px !important;
+  }
 }
 
 .body-composition-empty {
@@ -259,13 +297,13 @@
 }
 
 .history-section {
-  padding: 1rem;
-  border-radius: 22px;
+  padding: 0.75rem;
+  border-radius: 20px;
   border: 1px solid var(--c-border);
   background: var(--surface-base);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   box-sizing: border-box;
   width: 100%;
   overflow: hidden;
@@ -279,73 +317,72 @@
 
 .history-header h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--c-text);
 }
 
 .history-header p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: var(--c-muted);
 }
 
 .history-chip {
   align-self: flex-start;
-  padding: 0.35rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 999px;
   border: 1px solid var(--c-accent);
   color: var(--c-text);
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.history-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0;
+  padding: 0;
 }
 
 .history-table {
   width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 .history-table table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 100%;
+  min-width: 280px;
   box-sizing: border-box;
-}
-
-@media (max-width: 640px) {
-  .history-table {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-  }
-  
-  .history-table table {
-    min-width: 100%;
-  }
+  table-layout: fixed;
 }
 
 .history-table th,
 .history-table td {
-  text-align: left;
-  padding: 0.6rem 0.5rem;
+  text-align: center;
+  padding: 0.35rem 0.2rem;
   border-bottom: 1px solid var(--c-border);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: var(--c-text);
   box-sizing: border-box;
 }
 
+.history-table th:first-child,
+.history-table td:first-child {
+  text-align: left;
+}
+
 .history-table th {
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  font-size: 0.5rem;
   color: var(--c-muted);
   font-weight: 700;
+  background: var(--surface-base);
 }
 
 .history-empty {
@@ -378,6 +415,16 @@
   }
 }
 
+@media (min-width: 480px) {
+  .latest-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .latest-grid--secondary {
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  }
+}
+
 @media (min-width: 641px) and (max-width: 899px) {
   .body-composition-page {
     padding: 0 16px 28px;
@@ -397,8 +444,18 @@
     padding: 1rem 1.1rem 1.2rem;
   }
 
-  .charts-grid {
-    grid-template-columns: 1fr;
+  .history-section {
+    padding: 0.9rem;
+  }
+
+  .history-table th,
+  .history-table td {
+    padding: 0.4rem 0.25rem;
+    font-size: 0.72rem;
+  }
+
+  .history-table th {
+    font-size: 0.52rem;
   }
 }
 
@@ -425,8 +482,12 @@
     justify-content: space-between;
   }
 
+  .latest-grid--secondary {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
   .history-section {
-    padding: 1.6rem;
+    padding: 1rem;
   }
 
   .history-header {
@@ -436,20 +497,23 @@
   }
 
   .chart-card {
-    padding: 1.2rem 1.3rem 1.5rem;
+    padding: 1.2rem 1.3rem 1.4rem;
   }
 
-  .charts-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  /* Charts remain single column - intentional for mobile-first UX */
 
   .history-table th,
   .history-table td {
-    padding: 0.75rem 0.8rem;
-    font-size: 0.85rem;
+    padding: 0.45rem 0.3rem;
+    font-size: 0.75rem;
   }
 
   .history-table th {
-    font-size: 0.65rem;
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+  }
+
+  .history-table table {
+    min-width: 100%;
   }
 }

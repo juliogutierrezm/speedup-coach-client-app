@@ -282,6 +282,22 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy, AfterV
   }
 
   /**
+   * Purpose: format ISO dates in short format for compact table display.
+   * Input: ISO date string. Output: dd/MM/yy or placeholder.
+   * Error handling: returns placeholder on invalid date input.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  formatShortDate(dateString?: string): string {
+    const timestamp = this.getMetricTimestamp(dateString);
+    if (!timestamp) {
+      return '-';
+    }
+    const date = new Date(timestamp);
+    const year = date.getFullYear().toString().slice(-2);
+    return `${this.pad2(date.getDate())}/${this.pad2(date.getMonth() + 1)}/${year}`;
+  }
+
+  /**
    * Purpose: load client data and hydrate charts/table.
    * Input: none. Output: void.
    * Error handling: maps error to message and keeps UI stable.
@@ -387,10 +403,51 @@ export class ClientBodyCompositionComponent implements OnInit, OnDestroy, AfterV
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
   private resolveLatestMetric(latest: BodyMetric | undefined, metricsAsc: BodyMetric[]): BodyMetric | null {
-    if (latest && this.getMetricTimestamp(latest.measurementDate)) {
+    const historyLatest = metricsAsc.length ? metricsAsc[metricsAsc.length - 1] : null;
+
+    if (!latest || !this.getMetricTimestamp(latest.measurementDate)) {
+      return historyLatest;
+    }
+
+    if (!historyLatest) {
       return latest;
     }
-    return metricsAsc.length ? metricsAsc[metricsAsc.length - 1] : null;
+
+    const matchedHistoryMetric = this.findMatchingMetricByDate(metricsAsc, latest.measurementDate);
+    if (matchedHistoryMetric) {
+      // latestBodyMetrics puede venir parcial desde backend; completamos con el registro historico completo.
+      return {
+        ...matchedHistoryMetric,
+        ...latest
+      };
+    }
+
+    return latest;
+  }
+
+  /**
+   * Purpose: find a historical metric that matches the given measurement date.
+   * Input: metrics list and target measurement date. Output: matching metric or null.
+   * Error handling: returns null when target date is invalid or no match exists.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private findMatchingMetricByDate(metricsAsc: BodyMetric[], measurementDate?: string): BodyMetric | null {
+    const targetTs = this.getMetricTimestamp(measurementDate);
+    if (!targetTs) {
+      return null;
+    }
+
+    const exactMatch = metricsAsc.find(metric => this.getMetricTimestamp(metric?.measurementDate) === targetTs);
+    if (exactMatch) {
+      return exactMatch;
+    }
+
+    const targetIsoDay = measurementDate?.slice(0, 10);
+    if (!targetIsoDay) {
+      return null;
+    }
+
+    return metricsAsc.find(metric => metric?.measurementDate?.slice(0, 10) === targetIsoDay) ?? null;
   }
 
   /**
