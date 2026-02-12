@@ -1,57 +1,127 @@
 # SpeedUp Coach Client App
 
-## Proposito del repositorio
-Esta aplicacion cliente en Angular 19 ofrece la interfaz principal que ve un `Client` cuando trabaja con planes, sesiones y ejercicios asignados desde el backend central de SpeedUp Coach. Esta configurada para correr con Server Side Rendering (SSR) y autenticacion gestionada por AWS Amplify + Cognito, y aterriza sobre un API Gateway que expone los datos de clientes y temas.
+Estado actualizado y verificado en codigo: **11 de febrero de 2026**.
 
-## Tecnologias y librerias clave
-- **Angular 19** con modulos standalone y SSR (`src/app`, `src/server.ts`).
-- **AWS Amplify (Cognito)** para login, sesiones y atributos de usuario (`src/aws-exports.ts`, `src/app/services/auth.service.ts`).
-- **Express + @angular/ssr** para servir la app renderizada en `dist/speedup-coach-client` y manejar rutas universales (`src/server.ts`).
-- **RxJS** y patrones reactivos para cache de datos y estados compartidos (`BehaviorSubject`, `shareReplay`, `Subject`).
-- **Tailwind/PostCSS** en `styles.scss` y `tailwind.config.js` para utilidades visuales.
+## 1) Proposito
+Aplicacion cliente (rol `Client`) para consumir planes, sesiones, ejercicios y composicion corporal desde el backend de SpeedUp Coach.  
+La app usa **Angular 19 standalone + SSR** y autenticacion custom con **AWS Amplify/Cognito**.
 
-## Rutas, autenticacion y layout
-- `src/app/app.routes.ts` monta las rutas publicas (`/login`, `/forgot-password`, `/change-password`, `/unauthorized`) y anida `clientRoutes` debajo de `ClientLayoutComponent`.
-- `AuthGuard` (`src/app/guards/auth.guard.ts`) valida la sesion antes de activar las rutas. Mientras el estado es `unknown`, la app muestra un splash neutral y bloquea la navegacion inicial hasta resolver la sesion.
-- `AuthInterceptor` (`src/app/interceptors/auth.interceptor.ts`) adjunta el `Authorization: Bearer <token>` a cada llamada que toca `environment.apiBase` y evita tocar assets o endpoints publicos.
-- `ClientLayoutComponent` (`src/app/layout/client-layout.component.ts`) carga temas por tenant, expone controles de drawer, muestra mensajes de estado y llama a `AuthService.signOut()`.
+## 2) Stack y librerias principales
+- Angular 19 (`@angular/core`, `@angular/router`, `@angular/ssr`).
+- SSR con Node/Express (`src/server.ts` + `AngularNodeAppEngine`).
+- AWS Amplify Auth (`aws-amplify/auth`) para login y sesiones Cognito.
+- RxJS para estado y cache (`BehaviorSubject`, `Subject`, `shareReplay(1)`).
+- Tailwind + PostCSS + SCSS.
+- `ng-apexcharts`/`apexcharts` para graficas de composicion corporal.
 
-## Servicios de datos y tema
-- `AuthService` gestiona el estado del usuario (`UserProfile`, roles `ADMIN`, `TRAINER`, `CLIENT`), refresca el token desde Amplify y expone helpers sincronicos para guards.
-- `ClientDataService` es la unica fuente del backend para el perfil y los planes (`/clients`). Normaliza sesiones/planificaciones y cachea el resultado con `shareReplay(1)`.
-- `ThemeService` consulta `/tenant/theme`, aplica tokens CSS al `<html>` y ofrece helpers para cargar logos prefirmados y guardar la configuracion del tenant.
+## 3) Arquitectura actual
+- Bootstrap cliente en `src/main.ts`:
+  - Configura Amplify (`Amplify.configure(awsExports)`).
+  - Arranca `AppComponent` con `appConfig`.
+- `appConfig` (`src/app/app.config.ts`):
+  - Router con `withEnabledBlockingInitialNavigation()`.
+  - `provideHttpClient(withFetch(), withInterceptorsFromDi())`.
+  - `provideAppInitializer` que ejecuta `AuthService.initAuth()`.
+  - Registro de `AuthInterceptor`.
+- `AppComponent`:
+  - Muestra `SplashComponent` mientras `authStatus` sea `unknown`.
+  - Renderiza `router-outlet` cuando auth ya se resolvio.
 
-## Experiencia del cliente
-- **Planes (`/plans`)**: `ClientPlansComponent` lista los planes asignados, muestra numero de sesiones y abre `/plans/:planId`.
-- **Detalle de plan**: `ClientPlanDetailComponent` muestra sesiones con contadores, musculos y progresiones, y navega a `/session/:index`.
-- **Sesion**: `ClientSessionExercisesComponent` renderiza ejercicios ordenados, detecta superseries/circuitos, soporta accesibilidad y abre los detalles o el video del ejercicio.
-- **Ejercicio**: `ClientExerciseDetailComponent` expone descripciones, tips y musculos secundarios; tambien ofrece un boton para ir al video asociado.
-- **Video**: `ClientExerciseVideoComponent` reproduce el `preview_url`, `gif_url` o `thumbnail` de cada ejercicio en una vista dedicada.
-- **Perfil**: `ClientProfileComponent` muestra nombre, edad calculada, lesiones listadas y nombre del entrenador.
+## 4) Rutas vigentes
+Definidas en `src/app/app.routes.ts`.
 
-Cada componente depende de `ClientDataService` y sigue patrones de carga (`isLoading`, `errorMessage`, `finalize`) para ofrecer estados consistentes.
+Rutas publicas:
+- `/login`
+- `/change-password`
+- `/forgot-password`
+- `/unauthorized`
 
-## Utilidades compartidas
-- `session-exercise.utils.ts` define `SessionExercise` y helpers (`flattenSessionItems`, `getSessionExerciseCount`, `hasFunctionalExercise`) para normalizar y contar ejercicios incluso cuando llegan drivers de superseries.
+Rutas protegidas (layout + guards):
+- `/plans`
+- `/plans/:planId`
+- `/plans/:planId/session/:sessionIndex`
+- `/plans/:planId/session/:sessionIndex/exercise/:exerciseIndex`
+- `/plans/:planId/session/:sessionIndex/exercise/:exerciseIndex/video`
+- `/profile`
+- `/body-composition`
 
-## Configuraciones de entorno y deployment
-- `src/environments/environment.ts`, `.test.ts` y `.prod.ts` apuntan al mismo API Gateway (`https://k2ok2k1ft9.execute-api.us-east-1.amazonaws.com/{dev|prod}`).
-- `src/aws-exports.ts` contiene la configuracion de Amplify usada por `AuthService` (User Pool + App Client) para el flujo de login custom.
+Guardas:
+- `AuthGuard`: exige sesion valida y grupo `Client`.
+- `PublicOnlyGuard`: bloquea pantallas auth si ya hay sesion.
+- `RoleGuard`: existe en el repo, pero **no esta conectado actualmente en rutas**.
 
-## Flujo de desarrollo y scripts
-1. `npm install` instala dependencias Angular, Amplify y herramientas de testing.
-2. `npm start` o `ng serve` inicia el servidor de desarrollo en modo cliente.
-3. `ng build` genera el bundle para produccion.
-4. `npm run build` es equivalente a `ng build` y prepara `dist/speedup-coach-client`.
-5. `npm run test` ejecuta los tests unitarios con Karma/Jasmine.
-6. `npm run serve:ssr:speedup-coach-client` arranca el SSR usando el handler de `src/server.ts`.
+## 5) Flujo de autenticacion e inicializacion
+- `AuthService` maneja el estado con una maquina simple:
+  - `unknown` -> `authenticated` o `unauthenticated`.
+- `ClientLayoutComponent` observa `authStatus$`:
+  - Cuando queda autenticado, dispara `ClientAppInitService.initClientData()`.
+- `ClientAppInitService`:
+  - Hace una sola carga post-auth a `/clients` (idempotente).
+  - Controla `idle | loading | ready | error`.
+  - Aplica tema al completar la carga.
+  - Se resetea al volver a `unauthenticated`.
+- `AuthInterceptor`:
+  - Solo intercepta requests hacia `environment.apiBase`.
+  - Adjunta `Authorization: Bearer <idToken>` para endpoints que lo requieren (hoy, `/clients`).
+  - No hace navegacion ni side effects de UI.
 
-## Despliegue y SSR
-- El artefacto final se publica debajo de `dist/speedup-coach-client`; `src/server.ts` sirve los assets estaticos con `express.static` y utiliza `AngularNodeAppEngine` para renderizar el resto.
-- El flujo de autenticacion es 100% con UI custom: no se usa Cognito Hosted UI ni rutas `/callback`.
+## 6) Servicios y dominio de datos
+- `ClientDataService`:
+  - Endpoint principal: `${environment.apiBase}/clients`.
+  - Fuente central para perfil, planes, metricas y tema.
+  - Normaliza `sessions` y `progressions` cuando llegan serializados.
+  - Cache en memoria con `shareReplay(1)` y limpieza explicita con `clearCache()`.
+- `ThemeService`:
+  - Normaliza y aplica tema tenant (colores, font stack, modo dark/light).
+  - Expone `getTheme`, `saveTheme`, `getLogoUploadUrl`, `uploadLogoToS3`.
+  - Maneja fallback de tema por defecto si no hay tema backend.
 
-## Observabilidad y buenas practicas
-- Los componentes y servicios registran errores con contexto (`[ClientPlans]`, `[ThemeService]`, etc.) y calculan tiempos transcurridos usando referencias de `performance.now()`.
-- Se siguen patrones de guardado en `BehaviorSubject`/`Observable` para separar el estado (p.ej. `theme$`, `currentUser$`) de la UI.
+## 7) Pantallas funcionales
+- `ClientPlansComponent`: lista planes, ordena por fecha y navega a detalle.
+- `ClientPlanDetailComponent`: muestra sesiones, conteos, progresiones y navegacion a sesion.
+- `ClientSessionExercisesComponent`: soporta items simples y grupos (superserie/circuito), con accesibilidad de teclado.
+- `ClientExerciseDetailComponent`: descripcion, tecnica, errores comunes, grupos musculares.
+- `ClientExerciseVideoComponent`: usa `preview_url`, luego `gif_url`, luego `thumbnail`.
+- `ClientProfileComponent`: datos basicos del cliente (edad calculada, lesiones, entrenador).
+- `ClientBodyCompositionComponent`: metricas + 4 graficas ApexCharts responsivas (peso, grasa, masa muscular, comparativo).
+- Pantallas auth: `Login`, `ForgotPassword`, `ChangePassword`, `Unauthorized`.
 
-Mantener esta documentacion actualizada ayuda a que quien vuelva a este repositorio entienda rapidamente el flujo de planes, sesiones, autenticacion y tema por tenant.
+## 8) SSR y build output
+- Config SSR server-side en:
+  - `src/main.server.ts`
+  - `src/app/app.config.server.ts`
+  - `src/app/app.routes.server.ts` (render mode server para `**`)
+  - `src/server.ts` (Express + static + render universal)
+- Salida de build:
+  - `dist/speedup-coach-client/browser`
+  - `dist/speedup-coach-client/server`
+
+## 9) Entornos y endpoints
+- `src/environments/environment.ts` (dev): API Gateway `/dev`.
+- `src/environments/environment.prod.ts` (prod): API Gateway `/prod`.
+- `src/environments/environment.test.ts`: usa endpoint `dev`.
+- `src/aws-exports.ts`: configuracion de User Pool/App Client para flujo custom de login.
+
+## 10) Scripts disponibles
+- `npm start` -> `ng serve`
+- `npm run build` -> `ng build`
+- `npm run watch` -> build watch modo development
+- `npm run test` -> `ng test`
+- `npm run serve:ssr:speedup-coach-client` -> sirve bundle SSR generado
+
+## 11) Estado tecnico verificado hoy
+Comandos ejecutados sobre este repo el **11 de febrero de 2026**:
+
+1. `npm run build`
+- Resultado: **OK**
+- Observacion: warning de presupuesto en `src/app/layout/client-layout.component.scss` (excede el warning budget por ~1.42 kB).
+
+2. `npm run test -- --watch=false --browsers=ChromeHeadless`
+- Resultado: **OK**
+- Total: **9 tests exitosos**.
+
+## 12) Notas de mantenimiento actuales
+- `proxy.conf.json` existe pero esta vacio (`{}`).
+- `angular.json` referencia assets desde `public/`, pero la carpeta `public` no existe actualmente.
+- `src/app/app.component.html` contiene markup legado que no se usa (el componente raiz usa template inline).
+- Hay un `TODO` pendiente en `ClientDataService` para tipar `WorkoutSession.items`.

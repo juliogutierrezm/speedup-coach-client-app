@@ -3,13 +3,17 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
+    "start": "node dist/speedup-coach-client/server/server.mjs",
+    "start:dev": "ng serve",
+    "build": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:speedup-coach-client": "node dist/speedup-coach-client/server/server.mjs"
   },
   "private": true,
+  "engines": {
+    "node": ">=24 <25"
+  },
   "dependencies": {
     "@angular/animations": "^19.0.0",
     "@angular/common": "^19.0.0",
