@@ -18,13 +18,22 @@
 .plan-detail-header {
   display: flex;
   flex-direction: column;
+  padding: 1rem;
+  border-radius: 22px;
+  border: 1px solid var(--c-border);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--color-primary) / 0.1),
+    rgb(var(--color-accent) / 0.08)
+  );
+  box-shadow: var(--c-shadow);
 }
 
 .plans-detail-eyebrow {
   font-size: 0.7rem;
   letter-spacing: 0.35em;
   text-transform: uppercase;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--c-muted);
 }
 
@@ -52,11 +61,13 @@
   color: var(--c-text);
   font-size: 1.2rem;
   cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .nav-back:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   border-color: var(--c-accent);
+  box-shadow: 0 4px 12px rgb(var(--color-accent) / 0.2);
 }
 
 /* Title */
@@ -83,9 +94,9 @@
   border-radius: 999px;
   font-weight: 600;
 
-  background: var(--surface-soft);
-  border: 1px solid var(--c-border);
-  color: var(--c-muted);
+  background: rgb(var(--color-accent) / 0.1);
+  border: 1px solid var(--c-accent);
+  color: var(--c-text);
 }
 
 /* =========================
@@ -97,6 +108,12 @@
   padding: 1rem 1.2rem;
   border: 1px solid var(--c-border);
   background: var(--surface-base);
+  box-shadow: var(--c-shadow);
+  transition: border-color 200ms ease;
+}
+
+.progressions-accordion:hover {
+  border-color: rgb(var(--color-accent) / 0.3);
 }
 
 /* Summary row */
@@ -130,10 +147,11 @@
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--c-muted);
+  color: var(--c-text);
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid var(--c-border);
+  border: 1px solid var(--c-accent);
+  background: rgb(var(--color-accent) / 0.1);
 }
 
 .progressions-toggle {

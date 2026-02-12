@@ -48,6 +48,16 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                },
+                {
+                  "replace": "src/aws-exports.ts",
+                  "with": "src/aws-exports.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",

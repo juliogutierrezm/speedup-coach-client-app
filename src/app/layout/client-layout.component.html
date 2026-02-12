@@ -3,18 +3,33 @@
   [class.is-dark]="isDark"
   [ngStyle]="themeTokens"
 >
-  <div
-    class="client-loading"
-    *ngIf="isThemeLoading"
-    role="status"
-    aria-live="polite"
-    [attr.aria-busy]="isThemeLoading"
-  >
-    <div class="app-spinner" aria-hidden="true"></div>
-    <p>Cargando tu experiencia...</p>
-  </div>
+  <ng-container *ngIf="initState$ | async as initState">
 
-  <ng-container *ngIf="!isThemeLoading">
+    <!-- Loading screen (no router-outlet instantiation) -->
+    <div
+      class="client-loading"
+      *ngIf="initState === 'loading'"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div class="client-loading__content">
+        <div class="app-spinner" aria-hidden="true"></div>
+        <p class="client-loading__text">Cargando tu experiencia...</p>
+      </div>
+    </div>
+
+    <!-- Error screen (retry truly retries) -->
+    <div class="client-loading" *ngIf="initState === 'error'" role="status" aria-live="polite">
+      <div class="client-loading__content">
+        <p class="client-loading__title">No pudimos cargar tu información.</p>
+        <p class="client-loading__text" *ngIf="(initError$ | async) as err">{{ err }}</p>
+        <button type="button" class="client-loading__retry" (click)="retryInit()">Reintentar</button>
+      </div>
+    </div>
+
+    <!-- Ready: render full client shell -->
+    <ng-container *ngIf="initState === 'ready'">
 
     <header
       class="client-header"
@@ -82,17 +97,6 @@
           [class.open]="drawerOpen"
           aria-label="Navegación principal"
         >
-          <div class="drawer-brand" *ngIf="currentTheme as theme">
-            <div class="brand-logo" *ngIf="theme.logoUrl">
-              <img [src]="theme.logoUrl" [alt]="theme.appName || 'Logo'" />
-            </div>
-
-            <div class="brand-text">
-              <div class="brand-name">{{ theme.appName }}</div>
-              <div class="brand-tagline">{{ theme.tagline }}</div>
-            </div>
-          </div>
-
           <nav class="drawer-nav">
             <a
               class="drawer-item"
@@ -100,6 +104,7 @@
               routerLinkActive="active"
               (click)="closeDrawer()"
             >
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 48 48"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M30.507 36.163h-13.01m0-4.025h13.006m10.054 4.649h.835c.613 0 1.108-.491 1.108-1.104v-3.152c0-.61-.494-1.104-1.104-1.104h-.835m-3.893 8.58h2.786a1.1 1.1 0 0 0 1.103-1.103v-9.59a1.104 1.104 0 0 0-1.1-1.107h-2.785m-1.104-2.355H31.61c-.61 0-1.104.494-1.104 1.104v14.302a1.1 1.1 0 0 0 1.104 1.104h3.957a1.1 1.1 0 0 0 1.104-1.104V26.96a1.104 1.104 0 0 0-1.1-1.108zM7.439 36.791h-.831a1.104 1.104 0 0 1-1.108-1.1v-3.16c0-.612.491-1.104 1.108-1.104h.831m3.893 8.58h-2.79a1.103 1.103 0 0 1-1.103-1.103v-9.59c0-.612.491-1.107 1.104-1.107h2.782m1.107-2.355h3.954c.616 0 1.107.491 1.107 1.108v14.298a1.1 1.1 0 0 1-1.107 1.104h-3.95c-.61 0-1.104-.494-1.104-1.104V26.96c0-.613.492-1.108 1.104-1.108zm8.701 2.82h9.37m-13.01-1.078l1.531-1.538m2.11-4.94h13.25m-20.625-.159l1.41 1.414l3.855-3.874m2.11-4.94h13.25m-20.625-.16l1.41 1.414l3.855-3.87m11.48 28.5H17.496M9.374 28.206V7.849c0-1.225.98-2.211 2.193-2.211h24.87c1.217 0 2.196.983 2.196 2.211v20.358"/></svg>
               Planes
             </a>
 
@@ -109,11 +114,62 @@
               routerLinkActive="active"
               (click)="closeDrawer()"
             >
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 48 48">
+              <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M38.5 5.5h-29a4 4 0 0 0-4 4v29a4 4 0 0 0 4 4h29a4 4 0 0 0 4-4v-29a4 4 0 0 0-4-4"/><path fill="none" stroke="#333333" stroke-linecap="round" stroke-linejoin="round" d="M21.72 5.5h4.56v8.554h-4.56z"/><circle cx="18.869" cy="23.804" r="3.28" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M12.477 35.477a6.392 6.392 0 1 1 12.785 0zm15.205-6.393h7.841m-7.841-4h7.841m-7.841 8h7.841"/>
+            </svg>
               Perfil
+            </a>
+
+            <a
+              class="drawer-item"
+              routerLink="/body-composition"
+              routerLinkActive="active"
+              (click)="closeDrawer()"
+            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 48 48">
+              <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="m36.5 17.5l-3.7 3.7l-1.2 1.2c-.8.8-2.1.8-3 0q0 0 0 0c-2.5-2.5-6.6-2.5-9.1 0q0 0 0 0c-.8.8-2.1.8-3 0q0 0 0 0l-1.2-1.2l-3.7-3.7c-.8-.8-.8-2.2 0-3q0 0 0 0c6.9-6.9 18-6.9 24.9 0q0 0 0 0c.9.8.9 2.1 0 3q0 0 0 0M19 14.9l3.6 5.8"/>
+              <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M38.5 5.5h-29c-2.2 0-4 1.8-4 4v29c0 2.2 1.8 4 4 4h29c2.2 0 4-1.8 4-4v-29c0-2.2-1.8-4-4-4"/>
+            </svg>
+              Composicion corporal
             </a>
           </nav>
 
           <div class="drawer-divider"></div>
+
+          <div class="theme-switch-container" *ngIf="debugThemeEnabled">
+            <span class="theme-switch-label">{{ debugDarkMode ? 'Oscuro' : 'Claro' }}</span>
+            
+            <div 
+              class="theme-switch"
+              role="switch"
+              [attr.aria-checked]="debugDarkMode"
+              aria-label="Cambiar entre tema claro y oscuro"
+              tabindex="0"
+              (click)="onDebugThemeToggle(!debugDarkMode)"
+              (keydown.enter)="onDebugThemeToggle(!debugDarkMode)"
+              (keydown.space)="onDebugThemeToggle(!debugDarkMode); $event.preventDefault()"
+            >
+              <!-- Sun Icon (Light mode) -->
+              <div class="theme-switch-icon theme-switch-icon--sun" [class.active]="!debugDarkMode">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
+                  <circle cx="23.997" cy="23.995" r="9.438" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M2.5 23.995h7.346M23.997 45.5v-7.35m0-28.3V2.5m14.157 21.495H45.5M8.79 39.192l5.195-5.194M39.2 39.2l-5.198-5.198M13.989 13.991L8.79 8.794m25.212 5.19l5.194-5.194"/>
+                </svg>
+              </div>
+
+              <!-- Toggle Track -->
+              <div class="theme-switch-track">
+                <div class="theme-switch-thumb" [class.dark]="debugDarkMode"></div>
+              </div>
+
+              <!-- Moon Icon (Dark mode) -->
+              <div class="theme-switch-icon theme-switch-icon--moon" [class.active]="debugDarkMode">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
+                  <path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5.564 28.34c2.938 3.981 7.663 6.564 12.99 6.564c8.912 0 16.135-7.223 16.135-16.134c0-5.5-2.752-10.357-6.955-13.27c8.415 1.832 14.702 9.32 14.702 18.284c0 10.337-8.379 18.716-18.715 18.716c-8.77 0-16.127-6.02-18.158-14.16"/>
+                </svg>
+              </div>
+            </div>
+          </div>
 
           <button
             type="button"
@@ -121,19 +177,11 @@
             (click)="signOut(); closeDrawer()"
             [disabled]="isSigningOut"
           >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48">
+            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M42.5 7.857L26.357 24L42.5 40.143M21.643 7.857L5.5 24l16.143 16.143"/>
+          </svg>
             {{ isSigningOut ? 'Cerrando…' : 'Cerrar sesión' }}
           </button>
-
-          <div class="drawer-controls" *ngIf="debugThemeEnabled">
-            <label class="debug-toggle">
-              <input
-                type="checkbox"
-                [checked]="debugDarkMode"
-                (change)="onDebugThemeToggle($any($event.target).checked)"
-              />
-              Fuerza tema oscuro
-            </label>
-          </div>
         </aside>
 
 
@@ -145,5 +193,7 @@
 
       </div>
     </div>
+    </ng-container>
+
   </ng-container>
 </div>

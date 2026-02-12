@@ -1,120 +1,128 @@
-<div class="mx-auto w-full max-w-[980px] flex flex-col gap-4 px-4 pb-6 font-sans">
-  
-  <!-- Header Section -->
-  <header class="p-[clamp(1.3rem,3vw,1.75rem)] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm transition-colors">
-    <div class="flex flex-col gap-1.5">
-      <p class="text-[0.72rem] tracking-[0.35em] uppercase text-slate-500 dark:text-slate-400 font-bold">Mi cuenta</p>
-      <h1 class="m-0 text-[clamp(1.6rem,3vw,2.1rem)] font-semibold text-slate-900 dark:text-white leading-tight tracking-tight">Perfil de atleta</h1>
-      <p class="m-0 text-[0.95rem] text-slate-500 dark:text-slate-400 leading-snug">Información personal y estado físico.</p>
+<section class="profile-page">
+  <header class="profile-header">
+    <div class="profile-header-copy">
+      <div class="profile-header-top">
+      <p class="profile-eyebrow">Mi cuenta</p>
+      <div *ngIf="profile" class="profile-avatar">
+        {{ getInitials(profile.givenName + ' ' + profile.familyName) }}
+      </div>
+      </div>
+      <h1 class="profile-title">Información personal y estado físico.</h1>
     </div>
-    
-    <!-- Avatar Placeholder using Primary Color -->
-    <div *ngIf="profile" class="h-12 w-12 rounded-full flex items-center justify-center text-lg font-bold bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))] border border-[rgb(var(--color-primary))]/20">
-      {{ getInitials(profile.givenName + ' ' + profile.familyName) }}
-    </div>
+
   </header>
 
-  <!-- Error State -->
-  <div *ngIf="errorMessage" class="w-full max-w-[720px] border border-red-200 bg-red-50 text-red-700 p-4 rounded-[18px] dark:bg-red-900/20 dark:border-red-800 dark:text-red-300" role="alert">
+  <div *ngIf="errorMessage" class="profile-error" role="alert">
     {{ errorMessage }}
   </div>
 
-  <!-- Loading State -->
-  <div *ngIf="isLoading" class="w-full max-w-[680px] border border-[rgb(var(--color-primary))]/30 bg-[rgb(var(--color-primary))]/10 text-[rgb(var(--color-primary))] p-4 rounded-[18px] flex flex-col items-center gap-2.5" role="status">
-    <div class="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></div>
-    <p class="font-semibold text-sm tracking-wide">CARGANDO PERFIL...</p>
+  <div *ngIf="isLoading" class="profile-loading" role="status">
+    <div class="profile-spinner" aria-hidden="true"></div>
+    <p class="profile-loading-text">CARGANDO PERFIL...</p>
   </div>
 
-  <!-- Profile Content -->
-  <section *ngIf="!isLoading && !errorMessage && profile" class="flex flex-col gap-6">
-    
-    <!-- Personal Info Panel -->
-    <div class="p-[clamp(1rem,2vw,1.5rem)] rounded-[18px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-        <span class="material-symbols-outlined text-[rgb(var(--color-primary))]">person</span>
+  <section *ngIf="!isLoading && !errorMessage && profile" class="profile-content">
+    <article class="profile-card">
+      <h2 class="profile-card-title">
+        <span class="material-symbols-outlined profile-card-icon">person</span>
         Información Personal
       </h2>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- First Name -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Nombre</label>
-          <input readonly [value]="profile.givenName"
-                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+
+      <div class="profile-grid">
+        <div class="profile-field">
+          <label class="profile-label">Nombre</label>
+          <input
+            readonly
+            [value]="profile.givenName"
+            class="profile-input"
+          />
         </div>
 
-        <!-- Last Name -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Apellido</label>
-          <input readonly [value]="profile.familyName"
-                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        <div class="profile-field">
+          <label class="profile-label">Apellido</label>
+          <input
+            readonly
+            [value]="profile.familyName"
+            class="profile-input"
+          />
         </div>
 
-        <!-- Email -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</label>
-          <input readonly [value]="profile.email"
-                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        <div class="profile-field">
+          <label class="profile-label">Email</label>
+          <input
+            readonly
+            [value]="profile.email"
+            class="profile-input"
+          />
         </div>
 
-        <!-- Telephone -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Teléfono</label>
-          <input readonly [value]="profile.telephone"
-                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        <div class="profile-field">
+          <label class="profile-label">Teléfono</label>
+          <input
+            readonly
+            [value]="profile.telephone"
+            class="profile-input"
+          />
         </div>
 
-        <!-- Age (Calculated) -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Edad</label>
-          <input readonly [value]="getAge(profile.dateOfBirth)"
-                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        <div class="profile-field">
+          <label class="profile-label">Edad</label>
+          <input
+            readonly
+            [value]="getAge(profile.dateOfBirth)"
+            class="profile-input"
+          />
         </div>
 
-        <!-- Gender -->
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Género</label>
-          <input readonly [value]="profile.gender"
-                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
+        <div class="profile-field">
+          <label class="profile-label">Género</label>
+          <input
+            readonly
+            [value]="profile.gender"
+            class="profile-input"
+          />
         </div>
 
-        <!-- Trainer -->
-        <div class="flex flex-col gap-1.5 md:col-span-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Entrenador</label>
-          <div class="relative">
-            <input readonly [value]="profile.trainerName || 'No asignado'"
-                   class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white cursor-default">
-          </div>
+        <div class="profile-field profile-field--wide">
+          <label class="profile-label">Entrenador</label>
+          <input
+            readonly
+            [value]="profile.trainerName || 'No asignado'"
+            class="profile-input"
+          />
         </div>
 
-        <!-- Notes -->
-        <div class="flex flex-col gap-1.5 md:col-span-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Notas</label>
-          <textarea readonly rows="3"
-                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white resize-none cursor-default">{{ profile.notes }}</textarea>
+        <div class="profile-field profile-field--wide">
+          <label class="profile-label">Notas</label>
+          <textarea
+            readonly
+            rows="3"
+            class="profile-textarea"
+          >{{ profile.notes }}</textarea>
         </div>
       </div>
-    </div>
+    </article>
 
-    <!-- Physical Status Panel -->
-    <div class="p-[clamp(1rem,2vw,1.5rem)] rounded-[18px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-        <span class="material-symbols-outlined text-[rgb(var(--color-primary))]">medical_services</span>
+    <article class="profile-card">
+      <h2 class="profile-card-title">
+        <span class="material-symbols-outlined profile-card-icon">medical_services</span>
         Estado Físico
       </h2>
 
-      <div class="flex flex-col gap-1.5">
-        <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Lesiones o condiciones</label>
-        <textarea readonly rows="3"
-                  class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-slate-900 outline-none transition-all focus:border-[rgb(var(--color-primary))] focus:ring-2 focus:ring-[rgb(var(--color-primary))]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white resize-none cursor-default">{{ formatInjuries(profile.injuries) }}</textarea>
-        <p class="text-xs text-slate-400 mt-1">
+      <div class="profile-field">
+        <label class="profile-label">Lesiones o condiciones</label>
+        <textarea
+          readonly
+          rows="3"
+          class="profile-textarea"
+        >{{ formatInjuries(profile.injuries) }}</textarea>
+        <p class="profile-helper">
           * Para actualizar esta información, contacta a tu entrenador directamente.
         </p>
       </div>
-    </div>
-
+    </article>
   </section>
-</div>
+</section>
 
 <!--
 [PROMPT_SUGGESTION]Implementar la vista de detalle de sesión (ClientSessionExercisesComponent) con la lista de ejercicios y soporte para superseries.[/PROMPT_SUGGESTION]

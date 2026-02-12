@@ -37,6 +37,10 @@ app.use(
   }),
 );
 
+app.get('/health', (_req, res) => {
+  res.status(200).send('OK');
+});
+
 /**
  * Handle all other requests by rendering the Angular application.
  */
