@@ -39,12 +39,7 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [],
-            "server": "src/main.server.ts",
-            "outputMode": "server",
-            "ssr": {
-              "entry": "src/server.ts"
-            }
+            "scripts": []
           },
           "configurations": {
             "production": {
@@ -70,7 +65,9 @@
                   "maximumError": "15kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": true,
+              "serviceWorker": "ngsw-config.json"
             },
             "development": {
               "optimization": false,
@@ -87,8 +84,7 @@
               "buildTarget": "speedup-coach-client:build:production"
             },
             "development": {
-              "buildTarget": "speedup-coach-client:build:development",
-              "proxyConfig": "proxy.conf.json"
+              "buildTarget": "speedup-coach-client:build:development"
             }
           },
           "defaultConfiguration": "development"

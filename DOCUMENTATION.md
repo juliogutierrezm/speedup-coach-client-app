@@ -4,11 +4,10 @@ Estado actualizado y verificado en codigo: **11 de febrero de 2026**.
 
 ## 1) Proposito
 Aplicacion cliente (rol `Client`) para consumir planes, sesiones, ejercicios y composicion corporal desde el backend de SpeedUp Coach.  
-La app usa **Angular 19 standalone + SSR** y autenticacion custom con **AWS Amplify/Cognito**.
+La app usa **Angular 19 standalone SPA** y autenticacion custom con **AWS Amplify/Cognito**.
 
 ## 2) Stack y librerias principales
-- Angular 19 (`@angular/core`, `@angular/router`, `@angular/ssr`).
-- SSR con Node/Express (`src/server.ts` + `AngularNodeAppEngine`).
+- Angular 19 (`@angular/core`, `@angular/router`).
 - AWS Amplify Auth (`aws-amplify/auth`) para login y sesiones Cognito.
 - RxJS para estado y cache (`BehaviorSubject`, `Subject`, `shareReplay(1)`).
 - Tailwind + PostCSS + SCSS.
@@ -86,15 +85,11 @@ Guardas:
 - `ClientBodyCompositionComponent`: metricas + 4 graficas ApexCharts responsivas (peso, grasa, masa muscular, comparativo).
 - Pantallas auth: `Login`, `ForgotPassword`, `ChangePassword`, `Unauthorized`.
 
-## 8) SSR y build output
-- Config SSR server-side en:
-  - `src/main.server.ts`
-  - `src/app/app.config.server.ts`
-  - `src/app/app.routes.server.ts` (render mode server para `**`)
-  - `src/server.ts` (Express + static + render universal)
-- Salida de build:
+## 8) Build y despliegue estatico
+- Salida de build para despliegue:
   - `dist/speedup-coach-client/browser`
-  - `dist/speedup-coach-client/server`
+- Hosting objetivo:
+  - AWS S3 + CloudFront con fallback SPA hacia `/index.html`
 
 ## 9) Entornos y endpoints
 - `src/environments/environment.ts` (dev): API Gateway `/dev`.
@@ -107,7 +102,6 @@ Guardas:
 - `npm run build` -> `ng build`
 - `npm run watch` -> build watch modo development
 - `npm run test` -> `ng test`
-- `npm run serve:ssr:speedup-coach-client` -> sirve bundle SSR generado
 
 ## 11) Estado tecnico verificado hoy
 Comandos ejecutados sobre este repo el **11 de febrero de 2026**:
@@ -122,6 +116,5 @@ Comandos ejecutados sobre este repo el **11 de febrero de 2026**:
 
 ## 12) Notas de mantenimiento actuales
 - `proxy.conf.json` existe pero esta vacio (`{}`).
-- `angular.json` referencia assets desde `public/`, pero la carpeta `public` no existe actualmente.
 - `src/app/app.component.html` contiene markup legado que no se usa (el componente raiz usa template inline).
 - Hay un `TODO` pendiente en `ClientDataService` para tipar `WorkoutSession.items`.
