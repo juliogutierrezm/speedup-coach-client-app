@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 import { ClientSessionExercisesComponent } from './client-session-exercises.component';
 import { ClientDataService } from '../../services/client-data.service';
+import { ThemeService } from '../../services/theme.service';
 
 // Purpose: placeholder test for session exercises component creation.
 // Input: none. Output: component instance.
@@ -13,6 +14,10 @@ import { ClientDataService } from '../../services/client-data.service';
 describe('ClientSessionExercisesComponent', () => {
   const clientDataStub = {
     getMyPlans: () => of([])
+  };
+  const themeServiceStub = {
+    resolveSessionName: (name?: string, index = 0) => name || `Sesión ${index + 1}`,
+    getSessionNamingPrefix: () => 'Sesión'
   };
 
   const routerStub = { navigate: jasmine.createSpy('navigate') };
@@ -26,7 +31,8 @@ describe('ClientSessionExercisesComponent', () => {
       providers: [
         { provide: ClientDataService, useValue: clientDataStub },
         { provide: Router, useValue: routerStub },
-        { provide: ActivatedRoute, useValue: activatedRouteStub }
+        { provide: ActivatedRoute, useValue: activatedRouteStub },
+        { provide: ThemeService, useValue: themeServiceStub }
       ]
     }).compileComponents();
   });

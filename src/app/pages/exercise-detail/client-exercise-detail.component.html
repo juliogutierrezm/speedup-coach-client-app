@@ -5,7 +5,7 @@
       class="nav-back"
       type="button"
       (click)="goBack()"
-      aria-label="Volver a la sesión"
+      aria-label="Volver"
       [disabled]="isLoading">
       <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"><path fill="currentColor" d="M11.354 6.646a.5.5 0 0 1 0 .708L7.207 11.5H18a.5.5 0 0 1 0 1H7.207l4.147 4.146a.5.5 0 0 1-.708.708l-5-5a.5.5 0 0 1 0-.708l5-5a.5.5 0 0 1 .708 0"/></svg>
     </button>
@@ -39,12 +39,51 @@
         controls
         playsinline
         preload="metadata"
-        [attr.poster]="exercise?.thumbnail || ''">
+        [attr.poster]="videoPoster || ''"
+        [attr.title]="getExerciseTitle(exercise)"
+        (error)="onNativeVideoError()">
         <source [src]="previewUrl" type="video/mp4" />
       </video>
 
       <ng-template #noVideo>
-        <div class="thumb-placeholder">Sin video</div>
+        <ng-container *ngIf="youtubeEmbedUrl; else emptyVideo">
+          <iframe
+            *ngIf="isYouTubePlayerVisible; else youtubePoster"
+            [src]="youtubeEmbedUrl"
+            [attr.title]="'Video de ' + getExerciseTitle(exercise)"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin">
+          </iframe>
+
+          <ng-template #youtubePoster>
+            <button
+              class="video-launch"
+              type="button"
+              (click)="playYouTubeVideo()"
+              [attr.aria-label]="'Reproducir video de ' + getExerciseTitle(exercise)">
+              <img
+                *ngIf="hasThumbnail(); else youtubePosterFallback"
+                class="video-launch-poster"
+                [src]="videoPoster || ''"
+                [alt]="getExerciseTitle(exercise)"
+                (error)="onImageError()" />
+
+              <ng-template #youtubePosterFallback>
+                <div class="thumb-placeholder">Ver video</div>
+              </ng-template>
+
+              <span class="video-launch-overlay">
+                <span class="video-launch-icon" aria-hidden="true">▶</span>
+                <span class="video-launch-text">Ver video</span>
+              </span>
+            </button>
+          </ng-template>
+        </ng-container>
+
+        <ng-template #emptyVideo>
+          <div class="thumb-placeholder">Sin video</div>
+        </ng-template>
       </ng-template>
     </div>
 

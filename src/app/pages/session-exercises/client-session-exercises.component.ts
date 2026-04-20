@@ -4,7 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, finalize, map, switchMap, take, takeUntil } from 'rxjs/operators';
 import { ClientDataService, WorkoutPlan, WorkoutSession } from '../../services/client-data.service';
-import { SessionExercise } from '../../utils/session-exercise.utils';
+import { SessionExercise, resolveExerciseMedia } from '../../utils/session-exercise.utils';
+import { ThemeService } from '../../services/theme.service';
 
 interface SessionLookup {
   plan: WorkoutPlan | null;
@@ -44,7 +45,7 @@ interface SessionDisplayItem {
 export class ClientSessionExercisesComponent implements OnInit, OnDestroy {
   isLoading = false;
   planTitle = 'Plan de entrenamiento';
-  sessionTitle = 'Sesion';
+  sessionTitle = '';
   sessionMissing = false;
   sessionItems: SessionDisplayItem[] = [];
   exerciseCount = 0;
@@ -59,7 +60,8 @@ export class ClientSessionExercisesComponent implements OnInit, OnDestroy {
     private clientDataService: ClientDataService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public themeService: ThemeService
   ) {}
 
   /**
@@ -225,13 +227,17 @@ export class ClientSessionExercisesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Purpose: determine if an exercise has a usable thumbnail.
-   * Input: SessionExercise and index. Output: boolean.
-   * Error handling: returns false on missing or errored image.
+   * Purpose: resolve the best thumbnail URL for an exercise card.
+   * Input: SessionExercise and index. Output: string | null.
+   * Error handling: returns null on missing or errored image.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
-  hasThumbnail(exercise: SessionExercise, index: number): boolean {
-    return Boolean(exercise?.thumbnail) && !this.imageErrors.has(index);
+  getThumbnailUrl(exercise: SessionExercise, index: number): string | null {
+    if (this.imageErrors.has(index)) {
+      return null;
+    }
+
+    return resolveExerciseMedia(exercise).thumbnailUrl;
   }
 
   /**
@@ -290,7 +296,7 @@ export class ClientSessionExercisesComponent implements OnInit, OnDestroy {
       this.sessionMissing = true;
       this.sessionItems = [];
       this.exerciseCount = 0;
-      this.sessionTitle = 'Sesion';
+      this.sessionTitle = this.themeService.getSessionNamingPrefix();
       return;
     }
 
@@ -322,8 +328,7 @@ export class ClientSessionExercisesComponent implements OnInit, OnDestroy {
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
   private getSessionTitle(session: WorkoutSession, index: number): string {
-    const name = session?.name?.trim();
-    return name && name.length > 0 ? name : `Sesion ${index + 1}`;
+    return this.themeService.resolveSessionName(session?.name, index);
   }
 
   /**

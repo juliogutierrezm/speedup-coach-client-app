@@ -47,8 +47,8 @@
         <!-- Thumbnail -->
         <div class="exercise-thumb">
           <img
-            *ngIf="hasThumbnail(item.exercise!, item.flatIndex!); else noThumb"
-            [src]="item.exercise!.thumbnail"
+            *ngIf="getThumbnailUrl(item.exercise!, item.flatIndex!) as thumbnailUrl; else noThumb"
+            [src]="thumbnailUrl"
             [alt]="getExerciseTitle(item.exercise!, item.flatIndex!)"
             (error)="onImageError(item.flatIndex!)"
           />
@@ -104,8 +104,8 @@
             <!-- Thumbnail -->
             <div class="exercise-thumb">
               <img
-                *ngIf="hasThumbnail(child.exercise, child.flatIndex); else noThumb"
-                [src]="child.exercise.thumbnail"
+                *ngIf="getThumbnailUrl(child.exercise, child.flatIndex) as thumbnailUrl; else noThumb"
+                [src]="thumbnailUrl"
                 [alt]="getExerciseTitle(child.exercise, child.flatIndex)"
                 (error)="onImageError(child.flatIndex)"
               />
@@ -151,13 +151,13 @@
 
     <!-- EMPTY -->
     <div class="session-empty" *ngIf="!sessionItems.length">
-      <p>Esta sesión aún no tiene ejercicios.</p>
+      <p>{{ themeService.getSessionNamingPrefix() === 'Día' ? 'Este día' : 'Esta sesión' }} aún no tiene ejercicios.</p>
     </div>
   </section>
 
   <!-- MISSING -->
   <div class="session-missing" *ngIf="!isLoading && sessionMissing">
-    <p>No encontramos esta sesión.</p>
+    <p>No encontramos {{ themeService.getSessionNamingPrefix() === 'Día' ? 'este día' : 'esta sesión' }}.</p>
     <button class="client-button" (click)="goBack()">Volver</button>
   </div>
 </div>

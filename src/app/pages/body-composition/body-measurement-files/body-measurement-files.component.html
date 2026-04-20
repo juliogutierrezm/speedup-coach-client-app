@@ -1,0 +1,157 @@
+<section class="measurement-files-section">
+  <div class="files-header">
+    <div>
+      <p class="files-eyebrow">Archivos InBody</p>
+      <h2 class="files-title">Mis mediciones (PDF)</h2>
+    </div>
+    <button
+      class="upload-btn"
+      (click)="triggerFileInput()"
+      [disabled]="isUploading"
+      aria-label="Subir archivo PDF"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <span *ngIf="!isUploading">Subir PDF</span>
+      <span *ngIf="isUploading">Subiendo...</span>
+    </button>
+    <input
+      #fileInput
+      type="file"
+      accept="application/pdf"
+      class="file-input-hidden"
+      (change)="onFileSelected($event)"
+      aria-hidden="true"
+    />
+  </div>
+
+  <!-- Upload spinner -->
+  <div
+    *ngIf="isUploading"
+    class="files-loading"
+    role="status"
+    aria-live="polite"
+    [attr.aria-busy]="true"
+  >
+    <div class="app-spinner" aria-hidden="true"></div>
+    <p>Subiendo archivo...</p>
+  </div>
+
+  <!-- Loading state -->
+  <div
+    *ngIf="isLoading && !isUploading"
+    class="files-loading"
+    role="status"
+    aria-live="polite"
+    [attr.aria-busy]="true"
+  >
+    <div class="app-spinner" aria-hidden="true"></div>
+    <p>Cargando archivos...</p>
+  </div>
+
+  <!-- Toast notification -->
+  <div
+    *ngIf="toast"
+    class="files-toast"
+    [class.tone-success]="toast.tone === 'success'"
+    [class.tone-error]="toast.tone === 'error'"
+    role="status"
+    aria-live="polite"
+  >
+    <span class="toast-text">{{ toast.text }}</span>
+    <button class="toast-dismiss" (click)="dismissToast()" aria-label="Cerrar notificacion">
+      &times;
+    </button>
+  </div>
+
+  <!-- File list -->
+  <ng-container *ngIf="!isLoading">
+    <div class="files-list" *ngIf="files.length; else emptyState">
+      <article
+        class="file-card"
+        *ngFor="let file of files; trackBy: trackByFile"
+      >
+        <div class="file-info">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+               class="file-icon" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <div class="file-meta">
+            <span class="file-name">{{ file.fileName }}</span>
+            <span class="file-date">{{ formatDate(file.createdAt) }}</span>
+          </div>
+        </div>
+
+        <!-- Default actions -->
+        <div class="file-actions" *ngIf="confirmingDeleteKey !== file.fileKey">
+          <button
+            class="action-btn action-btn--view"
+            (click)="previewFile(file)"
+            [disabled]="deletingFileKey === file.fileKey"
+            aria-label="Ver archivo"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            Ver
+          </button>
+          <button
+            class="action-btn action-btn--delete"
+            (click)="confirmDelete(file.fileKey)"
+            [disabled]="deletingFileKey === file.fileKey"
+            aria-label="Eliminar archivo"
+          >
+            <ng-container *ngIf="deletingFileKey !== file.fileKey">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </ng-container>
+            <ng-container *ngIf="deletingFileKey === file.fileKey">
+              <div class="app-spinner app-spinner--sm" aria-hidden="true"></div>
+            </ng-container>
+          </button>
+        </div>
+
+        <!-- Inline delete confirmation -->
+        <div class="file-actions file-actions--confirm" *ngIf="confirmingDeleteKey === file.fileKey">
+          <span class="confirm-label">Eliminar?</span>
+          <button
+            class="action-btn action-btn--confirm-yes"
+            (click)="executeDelete(file)"
+            aria-label="Confirmar eliminacion"
+          >Si</button>
+          <button
+            class="action-btn action-btn--confirm-no"
+            (click)="cancelDelete()"
+            aria-label="Cancelar eliminacion"
+          >No</button>
+        </div>
+      </article>
+    </div>
+
+    <ng-template #emptyState>
+      <div class="files-empty">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+             class="empty-icon" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <p>No hay archivos subidos.</p>
+      </div>
+    </ng-template>
+  </ng-container>
+</section>

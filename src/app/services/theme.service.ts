@@ -39,6 +39,7 @@ export interface ThemeConfig {
   logoUrl?: string;  // Used only for display
   appName?: string;  // Max 40 chars
   tagline?: string;  // Max 80 chars
+  sessionNaming?: 'day' | 'session';  // Visual label for sessions
 }
 
 export interface TenantTheme {
@@ -51,6 +52,7 @@ export interface TenantTheme {
   appName?: string;
   tagline?: string;
   logoUrl?: string;
+  sessionNaming?: 'day' | 'session';
 }
 
 @Injectable({
@@ -315,11 +317,43 @@ export class ThemeService {
       fontFamily,
       appName: config.appName || '',
       tagline: config.tagline || '',
-      logoUrl: config.logoUrl || ''
+      logoUrl: config.logoUrl || '',
+      sessionNaming: config.sessionNaming === 'day' ? 'day' : 'session'
     };
   }
 
   private normalizeFontFamily(fontFamily?: string | null): string {
     return buildFontStack(fontFamily);
+  }
+
+  getSessionLabel(count: number): string {
+    const naming = this.tenantThemeSubject.value?.sessionNaming;
+    return naming === 'day'
+      ? (count === 1 ? 'Día' : 'Días')
+      : (count === 1 ? 'Sesión' : 'Sesiones');
+  }
+
+  getSessionLabelLower(count: number): string {
+    return this.getSessionLabel(count).toLowerCase();
+  }
+
+  getSessionNamingPrefix(): string {
+    const naming = this.tenantThemeSubject.value?.sessionNaming;
+    return naming === 'day' ? 'Día' : 'Sesión';
+  }
+
+  resolveSessionName(name: string | undefined | null, index: number): string {
+    const prefix = this.getSessionNamingPrefix();
+    const trimmed = name?.trim();
+    if (!trimmed || trimmed.length === 0) {
+      return `${prefix} ${index + 1}`;
+    }
+    if (this.tenantThemeSubject.value?.sessionNaming === 'day') {
+      const match = trimmed.match(/^Sesi[oó]n\s+(\d+)$/i);
+      if (match) {
+        return `Día ${match[1]}`;
+      }
+    }
+    return trimmed;
   }
 }
