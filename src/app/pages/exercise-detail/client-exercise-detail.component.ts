@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, finalize, map, switchMap, take, takeUntil } from 'rxjs/operators';
 import { ClientDataService, WorkoutPlan, WorkoutSession } from '../../services/client-data.service';
-import { SessionExercise, flattenSessionItems } from '../../utils/session-exercise.utils';
+import { SessionExercise, flattenSessionItems, resolveExerciseMedia } from '../../utils/session-exercise.utils';
+import { ThemeService } from '../../services/theme.service';
 
 interface ExerciseLookup {
   plan: WorkoutPlan | null;
@@ -32,7 +34,7 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
   isLoading = false;
   exerciseMissing = false;
   planTitle = 'Plan de entrenamiento';
-  sessionTitle = 'Sesion';
+  sessionTitle = '';
   exercise: SessionExercise | null = null;
   descriptionText = '';
   tips: string[] = [];
@@ -40,6 +42,9 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
   primaryMuscle: string | null = null;
   secondaryMuscles: string[] = [];
   previewUrl: string | null = null;
+  videoPoster: string | null = null;
+  youtubeEmbedUrl: SafeResourceUrl | null = null;
+  isYouTubePlayerVisible = false;
   errorMessage = '';
 
   private planId: string | null = null;
@@ -52,7 +57,9 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
     private clientDataService: ClientDataService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public themeService: ThemeService,
+    private sanitizer: DomSanitizer
   ) {}
 
   /**
@@ -90,12 +97,6 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/plans']);
   }
 
-  /**
-   * Purpose: open the YouTube video in a new tab.
-   * Input: none. Output: void (window side effect).
-   * Error handling: sets inline error message when the URL is missing.
-   * Standards Check: SRP OK | DRY OK | Tests Pending.
-   */
   /**
    * Purpose: return a readable exercise title.
    * Input: SessionExercise. Output: string.
@@ -167,13 +168,44 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Purpose: determine if the exercise has a usable thumbnail.
-   * Input: SessionExercise | null. Output: boolean.
+   * Purpose: determine if the resolved poster thumbnail is still usable.
+   * Input: none. Output: boolean.
    * Error handling: returns false on missing or errored image.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
-  hasThumbnail(exercise: SessionExercise | null): boolean {
-    return Boolean(exercise?.thumbnail) && !this.imageError;
+  hasThumbnail(): boolean {
+    return Boolean(this.videoPoster) && !this.imageError;
+  }
+
+  /**
+   * Purpose: reveal the YouTube fallback inline player after the user interacts.
+   * Input: none. Output: void.
+   * Error handling: ignores calls when no YouTube fallback exists.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  playYouTubeVideo(): void {
+    if (!this.youtubeEmbedUrl || this.isYouTubePlayerVisible) {
+      return;
+    }
+
+    this.isYouTubePlayerVisible = true;
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Purpose: switch to the YouTube fallback when the hosted video cannot load.
+   * Input: none. Output: void.
+   * Error handling: falls back to an empty state when no YouTube video exists.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  onNativeVideoError(): void {
+    if (!this.previewUrl) {
+      return;
+    }
+
+    this.previewUrl = null;
+    this.isYouTubePlayerVisible = false;
+    this.cdr.markForCheck();
   }
 
   /**
@@ -231,17 +263,20 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
    */
   private applyExerciseSnapshot(result: ExerciseLookup | null): void {
     if (!result?.plan || !result.session || !result.exercise) {
-    this.exerciseMissing = true;
-    this.exercise = null;
-    this.descriptionText = '';
-    this.tips = [];
-    this.mistakes = [];
-    this.primaryMuscle = null;
-    this.secondaryMuscles = [];
-    this.previewUrl = null;
-    
-    return;
-  }
+      this.exerciseMissing = true;
+      this.exercise = null;
+      this.descriptionText = '';
+      this.tips = [];
+      this.mistakes = [];
+      this.primaryMuscle = null;
+      this.secondaryMuscles = [];
+      this.previewUrl = null;
+      this.videoPoster = null;
+      this.youtubeEmbedUrl = null;
+      this.isYouTubePlayerVisible = false;
+      this.imageError = false;
+      return;
+    }
 
     this.exerciseMissing = false;
     this.exercise = result.exercise;
@@ -252,7 +287,13 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
     this.mistakes = this.normalizeTextList(result.exercise.common_mistakes);
     this.primaryMuscle = this.normalizeText(result.exercise.muscle_group);
     this.secondaryMuscles = this.normalizeTextList(result.exercise.secondary_muscles);
-    this.previewUrl = result.exercise.preview_url || null;
+    this.imageError = false;
+
+    const media = resolveExerciseMedia(result.exercise);
+    this.previewUrl = media.preferredSource === 'native' ? media.nativeVideoUrl : null;
+    this.videoPoster = media.thumbnailUrl;
+    this.youtubeEmbedUrl = this.toTrustedYouTubeEmbedUrl(media.youtubeEmbedUrl);
+    this.isYouTubePlayerVisible = false;
   }
 
   /**
@@ -282,8 +323,7 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
   private getSessionTitle(session: WorkoutSession, index: number): string {
-    const name = session?.name?.trim();
-    return name && name.length > 0 ? name : `Sesion ${index + 1}`;
+    return this.themeService.resolveSessionName(session?.name, index);
   }
 
   /**
@@ -390,5 +430,20 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
     const now = this.getNowMs();
     const elapsed = now - startedAt;
     return Number.isFinite(elapsed) ? Math.round(elapsed) : 0;
+  }
+
+  /**
+   * Purpose: sanitize the YouTube embed URL for iframe binding.
+   * Input: raw embed URL. Output: SafeResourceUrl | null.
+   * Error handling: returns null when no usable URL exists.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private toTrustedYouTubeEmbedUrl(url: string | null): SafeResourceUrl | null {
+    if (!url) {
+      return null;
+    }
+
+    const autoplayUrl = `${url}${url.includes('?') ? '&' : '?'}autoplay=1`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(autoplayUrl);
   }
 }

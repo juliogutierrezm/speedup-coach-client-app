@@ -84,7 +84,7 @@ export class AuthService {
     @Inject(PLATFORM_ID) platformId: Object,
     private themeService: ThemeService
   ) {
-    // Some build-time tooling (e.g. SSR route extraction) can run with a "browser" platformId
+    // Some build-time tooling can run with a "browser" platformId
     // but without real DOM globals. Guard against executing browser-only code in that context.
     this.isBrowser =
       isPlatformBrowser(platformId) &&
@@ -98,10 +98,10 @@ export class AuthService {
   /**
    * Resolves auth status deterministically.
    * Idempotent: multiple callers share the same promise.
-   */
+    */
   initAuth(): Promise<void> {
     if (!this.isBrowser) {
-      // SSR render should stay neutral; hydration will resolve in browser.
+      // Non-browser execution should stay neutral until the app runs in a real browser.
       return Promise.resolve();
     }
 

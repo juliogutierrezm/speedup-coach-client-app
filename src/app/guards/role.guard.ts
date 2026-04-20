@@ -18,7 +18,7 @@ export class RoleGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
   ): Observable<boolean | UrlTree> {
-    // SSR/build-time: avoid blocking initial navigation.
+    // Non-browser execution: avoid blocking route analysis when DOM APIs are unavailable.
     if (typeof window === 'undefined') {
       return of(true);
     }

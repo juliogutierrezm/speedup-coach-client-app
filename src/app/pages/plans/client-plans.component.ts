@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, finalize, takeUntil } from 'rxjs/operators';
 import { ClientDataService, WorkoutPlan } from '../../services/client-data.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-client-plans',
@@ -27,7 +28,8 @@ export class ClientPlansComponent implements OnInit, OnDestroy {
   constructor(
     private clientDataService: ClientDataService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public themeService: ThemeService
   ) {}
 
 

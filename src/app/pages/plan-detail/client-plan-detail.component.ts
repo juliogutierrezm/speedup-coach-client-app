@@ -5,6 +5,7 @@ import { Subject, of } from 'rxjs';
 import { catchError, finalize, map, switchMap, take, takeUntil } from 'rxjs/operators';
 import { ClientDataService, PlanProgressionWeek, WorkoutPlan, WorkoutSession } from '../../services/client-data.service';
 import { getSessionExerciseCount, getSessionPrimaryMuscle, hasFunctionalExercise } from '../../utils/session-exercise.utils';
+import { ThemeService } from '../../services/theme.service';
 
 /**
  * Purpose: Render a client plan detail view with its sessions list.
@@ -38,7 +39,8 @@ export class ClientPlanDetailComponent implements OnInit, OnDestroy {
     private clientDataService: ClientDataService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public themeService: ThemeService
   ) {}
 
   /**
@@ -151,8 +153,7 @@ export class ClientPlanDetailComponent implements OnInit, OnDestroy {
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
   getSessionTitle(session: WorkoutSession, index: number): string {
-    const name = session?.name?.trim();
-    return name && name.length > 0 ? name : `Sesion ${index + 1}`;
+    return this.themeService.resolveSessionName(session?.name, index);
   }
 
   /**

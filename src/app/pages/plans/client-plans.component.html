@@ -69,7 +69,7 @@
 
             <span class="plan-sessions-count">{{ getSessionCount(plan) }}</span>
             <span class="plan-sessions-label">
-              {{ getSessionCount(plan) === 1 ? 'Sesión' : 'Sesiones' }}
+              {{ themeService.getSessionLabel(getSessionCount(plan)) }}
             </span>
           </div>
 

@@ -17,7 +17,7 @@ export class PublicOnlyGuard implements CanActivate {
   ) {}
 
   canActivate(): Observable<boolean | UrlTree> {
-    // SSR/build-time: allow route config extraction without hanging.
+    // Non-browser execution: allow route analysis without waiting on browser-only auth state.
     if (typeof window === 'undefined') {
       return of(true);
     }

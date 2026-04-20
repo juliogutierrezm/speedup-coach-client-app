@@ -29,7 +29,7 @@ export class AuthGuard implements CanActivate, CanActivateChild {
   }
 
   private checkAuth(route: ActivatedRouteSnapshot, url: string): Observable<boolean | UrlTree> {
-    // SSR/build-time: we don't have browser auth state; avoid blocking initial navigation.
+    // Non-browser execution: avoid blocking route analysis when DOM APIs are unavailable.
     if (typeof window === 'undefined') {
       return of(true);
     }

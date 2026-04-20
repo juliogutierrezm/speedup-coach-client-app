@@ -35,6 +35,7 @@ import { ClientDataService, ClientProfile } from '../../services/client-data.ser
 import { TenantTheme } from '../../services/theme.service';
 import { BodyMetric } from '../../models/body-metric.model';
 import { ChartSeries, ChartSeriesPoint } from '../../models/chart-series.model';
+import { BodyMeasurementFilesComponent } from './body-measurement-files/body-measurement-files.component';
 
 type MetricKey = 'weightKg' | 'bodyFatPercentage' | 'muscleMassKg' | 'musclePercentage';
 
@@ -83,7 +84,7 @@ interface ChartCard {
 @Component({
   selector: 'app-client-body-composition',
   standalone: true,
-  imports: [CommonModule, NgApexchartsModule],
+  imports: [CommonModule, NgApexchartsModule, BodyMeasurementFilesComponent],
   templateUrl: './client-body-composition.component.html',
   styleUrls: ['./client-body-composition.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -4,6 +4,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { of } from 'rxjs';
 import { ClientPlansComponent } from './client-plans.component';
 import { ClientDataService } from '../../services/client-data.service';
+import { ThemeService } from '../../services/theme.service';
 
 // Purpose: placeholder test for client plans component creation.
 // Input: none. Output: component instance.
@@ -14,6 +15,9 @@ describe('ClientPlansComponent', () => {
   const clientDataStub = {
     getMyPlans: () => of([])
   };
+  const themeServiceStub = {
+    getSessionLabel: () => 'Sesiones'
+  };
 
 
   beforeEach(async () => {
@@ -21,6 +25,7 @@ describe('ClientPlansComponent', () => {
       imports: [ClientPlansComponent, NoopAnimationsModule, RouterTestingModule],
       providers: [
         { provide: ClientDataService, useValue: clientDataStub },
+        { provide: ThemeService, useValue: themeServiceStub },
       ]
     }).compileComponents();
   });

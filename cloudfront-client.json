@@ -1,0 +1,77 @@
+{
+  "CallerReference": "speedup-coach-client-1773450000",
+  "Aliases": {
+    "Quantity": 1,
+    "IA": "Nova Act",
+    "Items": [
+      "app.speedupcoach.net"
+    ]
+  },
+  "DefaultRootObject": "index.html",
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "S3Origin",
+        "DomainName": "speedup-coach-client-prod-1773449774.s3.amazonaws.com",
+        "OriginPath": "",
+        "CustomHeaders": { "Quantity": 0 },
+        "S3OriginConfig": {
+          "OriginAccessIdentity": ""
+        },
+        "ConnectionAttempts": 3,
+        "ConnectionTimeout": 10,
+        "OriginAccessControlId": "E12LZLLW0VM9GK"
+      }
+    ]
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "S3Origin",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": {
+      "Quantity": 2,
+      "Items": ["GET","HEAD"],
+      "CachedMethods": {
+        "Quantity": 2,
+        "Items": ["GET","HEAD"]
+      }
+    },
+    "Compress": true,
+    "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+    "TrustedSigners": { "Enabled": false, "Quantity": 0 },
+    "TrustedKeyGroups": { "Enabled": false, "Quantity": 0 }
+  },
+  "CustomErrorResponses": {
+    "Quantity": 2,
+    "Items": [
+      {
+        "ErrorCode": 403,
+        "ResponsePagePath": "/index.html",
+        "ResponseCode": "200",
+        "ErrorCachingMinTTL": 0
+      },
+      {
+        "ErrorCode": 404,
+        "ResponsePagePath": "/index.html",
+        "ResponseCode": "200",
+        "ErrorCachingMinTTL": 0
+      }
+    ]
+  },
+  "Comment": "speedup-coach-client static hosting",
+  "Enabled": true,
+  "PriceClass": "PriceClass_All",
+  "ViewerCertificate": {
+    "ACMCertificateArn": "arn:aws:acm:us-east-1:750391387727:certificate/5dcf28bf-9dee-49d3-be7f-f000ddb36257",
+    "SSLSupportMethod": "sni-only",
+    "MinimumProtocolVersion": "TLSv1.2_2021"
+  },
+  "Restrictions": {
+    "GeoRestriction": {
+      "RestrictionType": "none",
+      "Quantity": 0
+    }
+  },
+  "HttpVersion": "http2",
+  "IsIPV6Enabled": true
+}

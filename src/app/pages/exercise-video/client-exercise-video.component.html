@@ -25,19 +25,59 @@
 
   <section class="video-frame" *ngIf="!isLoading && !videoMissing && !errorMessage">
     <video
-      *ngIf="videoUrl; else videoPlaceholder"
+      *ngIf="videoUrl; else youtubeFallback"
       controls
       preload="metadata"
       playsinline
       [attr.poster]="videoPoster || ''"
-      [attr.title]="exerciseTitle">
+      [attr.title]="exerciseTitle"
+      (error)="onNativeVideoError()">
       <source [src]="videoUrl" type="video/mp4" />
       Tu navegador no soporta reproducir video.
     </video>
-    <ng-template #videoPlaceholder>
-      <div class="video-placeholder">
-        <p>No hay video disponible para este ejercicio.</p>
-      </div>
+
+    <ng-template #youtubeFallback>
+      <ng-container *ngIf="youtubeEmbedUrl; else videoPlaceholder">
+        <iframe
+          *ngIf="isYouTubePlayerVisible; else youtubePoster"
+          [src]="youtubeEmbedUrl"
+          [attr.title]="'Video de ' + exerciseTitle"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          referrerpolicy="strict-origin-when-cross-origin">
+        </iframe>
+
+        <ng-template #youtubePoster>
+          <button
+            class="video-launch"
+            type="button"
+            (click)="playYouTubeVideo()"
+            [attr.aria-label]="'Reproducir video de ' + exerciseTitle">
+            <img
+              *ngIf="videoPoster; else fallbackPoster"
+              class="video-launch-poster"
+              [src]="videoPoster || ''"
+              [alt]="exerciseTitle" />
+
+            <ng-template #fallbackPoster>
+              <div class="video-placeholder">
+                <p>Video disponible</p>
+              </div>
+            </ng-template>
+
+            <span class="video-launch-overlay">
+              <span class="video-launch-icon" aria-hidden="true">▶</span>
+              <span class="video-launch-text">Ver video</span>
+            </span>
+          </button>
+        </ng-template>
+      </ng-container>
+
+      <ng-template #videoPlaceholder>
+        <div class="video-placeholder">
+          <p>No hay video disponible para este ejercicio.</p>
+        </div>
+      </ng-template>
     </ng-template>
   </section>
 

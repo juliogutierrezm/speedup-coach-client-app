@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, map, shareReplay } from 'rxjs/operators';
+import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { TenantTheme } from './theme.service';
+import { TenantTheme, ThemeService } from './theme.service';
 import { BodyMetric } from '../models/body-metric.model';
 
 /* ============================
@@ -82,7 +82,8 @@ export class ClientDataService {
   private clientData$?: Observable<ClientDataResponse>;
 
   constructor(
-    private http: HttpClient
+    private http: HttpClient,
+    private themeService: ThemeService
   ) {}
 
   /**
@@ -116,6 +117,9 @@ export class ClientDataService {
           bodyMetrics: Array.isArray(res?.bodyMetrics) ? res.bodyMetrics : [],
           theme: res?.theme ?? null
         };
+      }),
+      tap(data => {
+        this.themeService.applyTheme(data.theme);
       }),
       catchError(error => {
         // Important: no cache "poisoning". Allow true retry.
