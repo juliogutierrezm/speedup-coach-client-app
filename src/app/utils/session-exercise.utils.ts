@@ -26,6 +26,83 @@ export interface SessionExercise {
   children?: unknown[];
 }
 
+export interface ResolvedExerciseMedia {
+  preferredSource: 'native' | 'youtube' | 'none';
+  nativeVideoUrl: string | null;
+  youtubeEmbedUrl: string | null;
+  thumbnailUrl: string | null;
+  hasPlayableVideo: boolean;
+}
+
+const YOUTUBE_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+
+/**
+ * Purpose: resolve the best available media for an exercise without changing its contract.
+ * Input: SessionExercise | null | undefined. Output: preferred video source plus thumbnail fallback.
+ * Error handling: returns an empty media object when the exercise has no usable media.
+ * Standards Check: SRP OK | DRY OK | Tests Pending.
+ */
+export const resolveExerciseMedia = (
+  exercise: SessionExercise | null | undefined
+): ResolvedExerciseMedia => {
+  const nativeVideoUrl = normalizeAssetUrl(exercise?.preview_url) || normalizeAssetUrl(exercise?.gif_url);
+  const youtubeId = extractYouTubeVideoId(exercise?.youtube_url);
+  const youtubeEmbedUrl = youtubeId ? buildYouTubeEmbedUrl(youtubeId) : null;
+  const thumbnailUrl =
+    normalizeAssetUrl(exercise?.thumbnail) || (youtubeId ? buildYouTubeThumbnailUrl(youtubeId) : null);
+  const preferredSource = nativeVideoUrl ? 'native' : youtubeEmbedUrl ? 'youtube' : 'none';
+
+  return {
+    preferredSource,
+    nativeVideoUrl,
+    youtubeEmbedUrl,
+    thumbnailUrl,
+    hasPlayableVideo: Boolean(nativeVideoUrl || youtubeEmbedUrl)
+  };
+};
+
+/**
+ * Purpose: extract a YouTube video id from supported URL formats or a raw id.
+ * Input: unknown YouTube value. Output: canonical video id or null.
+ * Error handling: returns null for invalid or unsupported values.
+ * Standards Check: SRP OK | DRY OK | Tests Pending.
+ */
+export const extractYouTubeVideoId = (value: unknown): string | null => {
+  const candidate = normalizeAssetUrl(value);
+  if (!candidate) {
+    return null;
+  }
+
+  const directId = normalizeYouTubeId(candidate);
+  if (directId) {
+    return directId;
+  }
+
+  const parsedUrl = tryParseUrl(candidate);
+  if (!parsedUrl) {
+    return null;
+  }
+
+  const hostname = parsedUrl.hostname.replace(/^www\./i, '').toLowerCase();
+  if (hostname === 'youtu.be') {
+    return normalizeYouTubeId(parsedUrl.pathname.split('/').filter(Boolean)[0] || null);
+  }
+
+  if (hostname.endsWith('youtube.com') || hostname.endsWith('youtube-nocookie.com')) {
+    const watchId = parsedUrl.searchParams.get('v');
+    if (watchId) {
+      return normalizeYouTubeId(watchId);
+    }
+
+    const pathSegments = parsedUrl.pathname.split('/').filter(Boolean);
+    if (pathSegments.length >= 2 && ['embed', 'shorts', 'live', 'v'].includes(pathSegments[0])) {
+      return normalizeYouTubeId(pathSegments[1]);
+    }
+  }
+
+  return null;
+};
+
 /**
  * Purpose: normalize session exercise items into a flattened list for display.
  * Input: unknown array of items. Output: SessionExercise[].
@@ -109,3 +186,39 @@ const toExercise = (value: unknown): SessionExercise | null => {
   }
   return value as SessionExercise;
 };
+
+const normalizeAssetUrl = (value: unknown): string | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const normalizeYouTubeId = (value: string | null | undefined): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return YOUTUBE_ID_PATTERN.test(trimmed) ? trimmed : null;
+};
+
+const tryParseUrl = (value: string): URL | null => {
+  try {
+    return new URL(value);
+  } catch {
+    try {
+      return new URL(`https://${value}`);
+    } catch {
+      return null;
+    }
+  }
+};
+
+const buildYouTubeEmbedUrl = (videoId: string): string =>
+  `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`;
+
+const buildYouTubeThumbnailUrl = (videoId: string): string =>
+  `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;

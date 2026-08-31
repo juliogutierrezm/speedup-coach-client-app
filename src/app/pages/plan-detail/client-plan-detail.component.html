@@ -22,7 +22,7 @@
              </div>
              <span class="plan-chip mt-2">
                {{ getSessionCount(plan) }}
-               {{ getSessionCount(plan) === 1 ? 'sesión' : 'sesiones' }}
+               {{ themeService.getSessionLabelLower(getSessionCount(plan)) }}
              </span>
          </div>
         </div>
@@ -114,7 +114,7 @@
     <!-- SESSIONS -->
     <div class="sessions-shell mt-6">
       <div class="sessions-heading">
-        <h2>Sesiones</h2>
+       <!--  <h2>{{ themeService.getSessionLabel(2) }}</h2> -->
       </div>
 
       <div class="sessions-list mb-3">
@@ -179,7 +179,7 @@
           class="sessions-empty"
           *ngIf="!sessionList.length"
         >
-          <p>Este plan aún no tiene sesiones asignadas.</p>
+          <p>Este plan aún no tiene {{ themeService.getSessionLabelLower(2) }} asignadas.</p>
         </div>
 
       </div>

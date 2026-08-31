@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, finalize, map, switchMap, take, takeUntil } from 'rxjs/operators';
 import { ClientDataService, WorkoutPlan, WorkoutSession } from '../../services/client-data.service';
-import { SessionExercise, flattenSessionItems } from '../../utils/session-exercise.utils';
+import { SessionExercise, flattenSessionItems, resolveExerciseMedia } from '../../utils/session-exercise.utils';
+import { ThemeService } from '../../services/theme.service';
 
 interface VideoLookup {
   plan: WorkoutPlan | null;
@@ -34,9 +36,11 @@ export class ClientExerciseVideoComponent implements OnInit, OnDestroy {
   exerciseTitle = 'Ejercicio';
   videoUrl: string | null = null;
   videoPoster: string | null = null;
+  youtubeEmbedUrl: SafeResourceUrl | null = null;
+  isYouTubePlayerVisible = false;
   errorMessage = '';
   planTitle = 'Plan de entrenamiento';
-  sessionTitle = 'Sesion';
+  sessionTitle = '';
 
   private planId: string | null = null;
   private sessionIndex: number | null = null;
@@ -47,7 +51,9 @@ export class ClientExerciseVideoComponent implements OnInit, OnDestroy {
     private clientDataService: ClientDataService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private themeService: ThemeService,
+    private sanitizer: DomSanitizer
   ) {}
 
   /**
@@ -90,6 +96,38 @@ export class ClientExerciseVideoComponent implements OnInit, OnDestroy {
       return;
     }
     this.router.navigate(['/plans']);
+  }
+
+  /**
+   * Purpose: reveal the YouTube fallback inline player after the user interacts.
+   * Input: none. Output: void.
+   * Error handling: ignores calls when no YouTube fallback exists.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  playYouTubeVideo(): void {
+    if (!this.youtubeEmbedUrl || this.isYouTubePlayerVisible) {
+      return;
+    }
+
+    this.isYouTubePlayerVisible = true;
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Purpose: switch to the YouTube fallback when the hosted video cannot load.
+   * Input: none. Output: void.
+   * Error handling: marks the exercise as missing when no fallback exists.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  onNativeVideoError(): void {
+    if (!this.videoUrl) {
+      return;
+    }
+
+    this.videoUrl = null;
+    this.videoMissing = !this.youtubeEmbedUrl;
+    this.isYouTubePlayerVisible = false;
+    this.cdr.markForCheck();
   }
 
   /**
@@ -150,16 +188,21 @@ export class ClientExerciseVideoComponent implements OnInit, OnDestroy {
       this.videoMissing = true;
       this.videoUrl = null;
       this.videoPoster = null;
+      this.youtubeEmbedUrl = null;
+      this.isYouTubePlayerVisible = false;
       return;
     }
 
-    this.videoMissing = false;
     this.planTitle = this.getPlanTitle(result.plan);
     this.sessionTitle = this.getSessionTitle(result.session, this.sessionIndex ?? 0);
     this.exerciseTitle = this.getExerciseTitle(result.exercise);
-    // Priority: preview_url → gif_url (if exists) → thumbnail → fallback visual
-    this.videoUrl = result.exercise.preview_url || result.exercise.gif_url || result.exercise.thumbnail || null;
-    this.videoPoster = result.exercise.thumbnail || null;
+
+    const media = resolveExerciseMedia(result.exercise);
+    this.videoMissing = !media.hasPlayableVideo;
+    this.videoUrl = media.preferredSource === 'native' ? media.nativeVideoUrl : null;
+    this.videoPoster = media.thumbnailUrl;
+    this.youtubeEmbedUrl = this.toTrustedYouTubeEmbedUrl(media.youtubeEmbedUrl);
+    this.isYouTubePlayerVisible = false;
   }
 
   /**
@@ -210,8 +253,7 @@ export class ClientExerciseVideoComponent implements OnInit, OnDestroy {
    * Standards Check: SRP OK | DRY OK | Tests Pending.
    */
   private getSessionTitle(session: WorkoutSession | null, index: number): string {
-    const name = session?.name?.trim();
-    return name && name.length > 0 ? name : `Sesion ${index + 1}`;
+    return this.themeService.resolveSessionName(session?.name, index);
   }
 
   /**
@@ -276,5 +318,20 @@ export class ClientExerciseVideoComponent implements OnInit, OnDestroy {
     const now = this.getNowMs();
     const elapsed = now - startedAt;
     return Number.isFinite(elapsed) ? Math.round(elapsed) : 0;
+  }
+
+  /**
+   * Purpose: sanitize the YouTube embed URL for iframe binding.
+   * Input: raw embed URL. Output: SafeResourceUrl | null.
+   * Error handling: returns null when no usable URL exists.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private toTrustedYouTubeEmbedUrl(url: string | null): SafeResourceUrl | null {
+    if (!url) {
+      return null;
+    }
+
+    const autoplayUrl = `${url}${url.includes('?') ? '&' : '?'}autoplay=1`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(autoplayUrl);
   }
 }
