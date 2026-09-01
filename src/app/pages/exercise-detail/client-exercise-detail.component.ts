@@ -1,10 +1,15 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, of } from 'rxjs';
+import { EMPTY, Subject, of } from 'rxjs';
 import { catchError, finalize, map, switchMap, take, takeUntil } from 'rxjs/operators';
 import { ClientDataService, WorkoutPlan, WorkoutSession } from '../../services/client-data.service';
+import {
+  ClientExerciseWeightLogService,
+  ExerciseWeightLog
+} from '../../services/client-weight-entry.service';
 import { SessionExercise, flattenSessionItems, resolveExerciseMedia } from '../../utils/session-exercise.utils';
 import { ThemeService } from '../../services/theme.service';
 
@@ -13,6 +18,10 @@ interface ExerciseLookup {
   session: WorkoutSession | null;
   exercise: SessionExercise | null;
 }
+
+type WeightUnit = 'kg' | 'lb';
+
+const POUNDS_PER_KILOGRAM = 2.2046226218;
 
 /**
  * Purpose: render the detail view for a selected exercise.
@@ -24,7 +33,8 @@ interface ExerciseLookup {
   selector: 'app-client-exercise-detail',
   standalone: true,
   imports: [
-    CommonModule
+    CommonModule,
+    FormsModule
   ],
   templateUrl: './client-exercise-detail.component.html',
   styleUrls: ['./client-exercise-detail.component.scss'],
@@ -46,6 +56,20 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
   youtubeEmbedUrl: SafeResourceUrl | null = null;
   isYouTubePlayerVisible = false;
   errorMessage = '';
+  weightLogs: ExerciseWeightLog[] = [];
+  weightLogCount = 0;
+  editingWeightLog: ExerciseWeightLog | null = null;
+  logPendingDelete: ExerciseWeightLog | null = null;
+  isDeletingWeightLog = false;
+  weightAmount: number | null = null;
+  weightUnit: WeightUnit = 'kg';
+  readonly todayDate = this.getTodayDate();
+  recordedAt = this.todayDate;
+  weightNote = '';
+  isWeightLogLoading = false;
+  isSavingWeightLog = false;
+  weightLogError = '';
+  weightLogSuccess = '';
 
   private planId: string | null = null;
   private sessionIndex: number | null = null;
@@ -59,7 +83,8 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
     private router: Router,
     private cdr: ChangeDetectorRef,
     public themeService: ThemeService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private exerciseWeightLogService: ClientExerciseWeightLogService
   ) {}
 
   /**
@@ -208,6 +233,241 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  saveWeightLog(): void {
+    const rawExerciseId = this.exercise?.id || (this.exercise as any)?.exerciseId;
+    if (!this.planId || !rawExerciseId || !this.exercise) {
+      this.weightLogError = 'No pudimos identificar este ejercicio.';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    if (typeof this.weightAmount !== 'number' || !Number.isFinite(this.weightAmount) || this.weightAmount <= 0) {
+      this.weightLogError = `Ingresa un peso valido entre 0,1 y ${this.maximumWeightForUnit} ${this.weightUnit}.`;
+      this.weightLogSuccess = '';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const maxAllowed = this.weightUnit === 'kg' ? 2000 : 2000 * POUNDS_PER_KILOGRAM;
+    if (this.weightAmount > maxAllowed) {
+      this.weightLogError = `Ingresa un peso valido entre 0,1 y ${this.maximumWeightForUnit} ${this.weightUnit}.`;
+      this.weightLogSuccess = '';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(this.recordedAt)) {
+      this.weightLogError = 'Selecciona una fecha valida.';
+      this.weightLogSuccess = '';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.isSavingWeightLog = true;
+    this.weightLogError = '';
+    this.weightLogSuccess = '';
+    this.cdr.markForCheck();
+
+    if (this.editingWeightLog) {
+      const logId = this.editingWeightLog.logId || this.editingWeightLog.id || '';
+      const originalPerformedAt = this.editingWeightLog.performedAt;
+
+      this.exerciseWeightLogService.updateLog({
+        planId: this.planId,
+        exerciseId: rawExerciseId,
+        logId,
+        originalPerformedAt,
+        weight: this.weightAmount,
+        unit: this.weightUnit,
+        performedAt: this.recordedAt,
+        note: this.weightNote.trim() || undefined
+      })
+        .pipe(
+          catchError(error => {
+            console.error('[ClientExerciseDetail] weight log update failed', { error });
+            this.weightLogError = 'No se pudo actualizar el peso. Intenta de nuevo.';
+            return EMPTY;
+          }),
+          finalize(() => {
+            this.isSavingWeightLog = false;
+            this.cdr.markForCheck();
+          }),
+          takeUntil(this.destroy$)
+        )
+        .subscribe(() => {
+          this.cancelEditWeightLog();
+          this.weightLogSuccess = 'Peso actualizado.';
+          this.loadWeightLogs();
+          this.cdr.markForCheck();
+        });
+      return;
+    }
+
+    this.exerciseWeightLogService.createLog({
+      planId: this.planId,
+      exerciseId: rawExerciseId,
+      weight: this.weightAmount,
+      unit: this.weightUnit,
+      performedAt: this.recordedAt,
+      note: this.weightNote.trim() || undefined
+    })
+      .pipe(
+        catchError(error => {
+          console.error('[ClientExerciseDetail] weight log save failed', { error });
+          this.weightLogError = 'No se pudo guardar el peso. Intenta de nuevo.';
+          return EMPTY;
+        }),
+        finalize(() => {
+          this.isSavingWeightLog = false;
+          this.cdr.markForCheck();
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        this.weightAmount = null;
+        this.weightNote = '';
+        this.weightLogSuccess = 'Peso guardado.';
+        this.loadWeightLogs();
+        this.cdr.markForCheck();
+      });
+  }
+
+  startEditWeightLog(log: ExerciseWeightLog): void {
+    this.editingWeightLog = log;
+    this.weightAmount = typeof log.weight === 'number' && Number.isFinite(log.weight)
+      ? log.weight
+      : ((log as any).weightKg ?? null);
+    this.weightUnit = log.unit || 'kg';
+    this.recordedAt = this.extractDateInputString(log.performedAt);
+    this.weightNote = log.note || '';
+    this.weightLogError = '';
+    this.weightLogSuccess = '';
+    this.cdr.markForCheck();
+  }
+
+  cancelEditWeightLog(): void {
+    this.editingWeightLog = null;
+    this.weightAmount = null;
+    this.weightUnit = 'kg';
+    this.recordedAt = this.getTodayDate();
+    this.weightNote = '';
+    this.weightLogError = '';
+    this.weightLogSuccess = '';
+    this.cdr.markForCheck();
+  }
+
+  promptDeleteWeightLog(log: ExerciseWeightLog): void {
+    this.logPendingDelete = log;
+    this.cdr.markForCheck();
+  }
+
+  cancelDeleteWeightLog(): void {
+    this.logPendingDelete = null;
+    this.cdr.markForCheck();
+  }
+
+  confirmDeleteWeightLog(): void {
+    if (!this.logPendingDelete) {
+      return;
+    }
+
+    const rawExerciseId = this.exercise?.id || (this.exercise as any)?.exerciseId;
+    const logId = this.logPendingDelete.logId || this.logPendingDelete.id || '';
+    const performedAt = this.logPendingDelete.performedAt;
+
+    if (!this.planId || !rawExerciseId || !logId || !performedAt) {
+      this.weightLogError = 'No pudimos identificar el registro a eliminar.';
+      this.logPendingDelete = null;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.isDeletingWeightLog = true;
+    this.weightLogError = '';
+    this.cdr.markForCheck();
+
+    const deletedLog = this.logPendingDelete;
+
+    this.exerciseWeightLogService.deleteLog(this.planId, rawExerciseId, logId, performedAt)
+      .pipe(
+        catchError(error => {
+          console.error('[ClientExerciseDetail] weight log delete failed', { error });
+          this.weightLogError = 'No se pudo eliminar el registro. Intenta de nuevo.';
+          return EMPTY;
+        }),
+        finalize(() => {
+          this.isDeletingWeightLog = false;
+          this.logPendingDelete = null;
+          this.cdr.markForCheck();
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        if (
+          this.editingWeightLog &&
+          (this.editingWeightLog.logId === deletedLog.logId || this.editingWeightLog.id === deletedLog.id)
+        ) {
+          this.cancelEditWeightLog();
+        }
+        this.weightLogSuccess = 'Registro eliminado.';
+        this.loadWeightLogs();
+        this.cdr.markForCheck();
+      });
+  }
+
+  onWeightUnitChange(unit: WeightUnit): void {
+    if (unit === this.weightUnit) {
+      return;
+    }
+
+    if (typeof this.weightAmount === 'number' && Number.isFinite(this.weightAmount)) {
+      const converted = unit === 'lb'
+        ? this.weightAmount * POUNDS_PER_KILOGRAM
+        : this.weightAmount / POUNDS_PER_KILOGRAM;
+      this.weightAmount = Number(converted.toFixed(1));
+    }
+
+    this.weightUnit = unit;
+    this.cdr.markForCheck();
+  }
+
+  get maximumWeightForUnit(): number {
+    return this.weightUnit === 'kg' ? 2000 : Math.round(2000 * POUNDS_PER_KILOGRAM);
+  }
+
+  formatWeightLog(log: ExerciseWeightLog): string {
+    const rawWeight = typeof log.weight === 'number' && Number.isFinite(log.weight)
+      ? log.weight
+      : (log as any).weightKg;
+
+    if (typeof rawWeight !== 'number' || !Number.isFinite(rawWeight)) {
+      return '-';
+    }
+
+    const logUnit = log.unit || 'kg';
+    const decimals = Number.isInteger(rawWeight) ? 0 : 1;
+    return `${rawWeight.toFixed(decimals)} ${logUnit}`;
+  }
+
+  formatWeightLogDate(value?: string): string {
+    if (!value) return '';
+
+    const datePart = value.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+
+    if (!year || !month || !day) return value;
+
+    return `${day}/${month}/${year}`;
+  }
+
+  trackByWeightLog = (_index: number, log: ExerciseWeightLog): string => log.logId || log.id || `${log.performedAt}-${_index}`;
+
+  private extractDateInputString(value?: string): string {
+    if (!value) return this.getTodayDate();
+    const datePart = value.split('T')[0];
+    return /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : this.getTodayDate();
+  }
+
   /**
    * Purpose: load exercise detail based on route params.
    * Input: none. Output: void.
@@ -275,6 +535,8 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
       this.youtubeEmbedUrl = null;
       this.isYouTubePlayerVisible = false;
       this.imageError = false;
+      this.weightLogs = [];
+      this.weightLogCount = 0;
       return;
     }
 
@@ -294,6 +556,44 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
     this.videoPoster = media.thumbnailUrl;
     this.youtubeEmbedUrl = this.toTrustedYouTubeEmbedUrl(media.youtubeEmbedUrl);
     this.isYouTubePlayerVisible = false;
+    this.loadWeightLogs();
+  }
+
+  private loadWeightLogs(): void {
+    const rawExerciseId = this.exercise?.id || (this.exercise as any)?.exerciseId;
+    if (!this.planId || !rawExerciseId) {
+      return;
+    }
+
+    this.isWeightLogLoading = true;
+    this.weightLogError = '';
+    this.exerciseWeightLogService.getLogs(this.planId, rawExerciseId)
+      .pipe(
+        catchError(error => {
+          console.error('[ClientExerciseDetail] weight logs load failed', { error });
+          this.weightLogError = 'No se pudo cargar el historial de pesos.';
+          return of({ count: 0, items: [] as ExerciseWeightLog[] });
+        }),
+        finalize(() => {
+          this.isWeightLogLoading = false;
+          this.cdr.markForCheck();
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(response => {
+        const items = Array.isArray(response?.items) ? response.items : [];
+        this.weightLogs = this.sortWeightLogs(items);
+        this.weightLogCount = typeof response?.count === 'number' ? response.count : items.length;
+        this.cdr.markForCheck();
+      });
+  }
+
+  private sortWeightLogs(logs: ExerciseWeightLog[]): ExerciseWeightLog[] {
+    return [...logs].sort((first, second) => {
+      const dateA = first.performedAt || (first as any).recordedAt || '';
+      const dateB = second.performedAt || (second as any).recordedAt || '';
+      return dateB.localeCompare(dateA);
+    });
   }
 
   /**
@@ -418,6 +718,23 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
    */
   private getNowMs(): number {
     return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+  }
+
+  private getTodayDate(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = `${today.getMonth() + 1}`.padStart(2, '0');
+    const day = `${today.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private toKilograms(amount: number | null): number | null {
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      return null;
+    }
+
+    const kilograms = this.weightUnit === 'kg' ? amount : amount / POUNDS_PER_KILOGRAM;
+    return Number(kilograms.toFixed(3));
   }
 
   /**

@@ -155,7 +155,7 @@ export class BodyMeasurementFilesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Purpose: open a file preview in a new browser tab.
+   * Purpose: navigate to the file's presigned URL for preview or download.
    * Input: ClientBodyMeasurementFile. Output: void.
    * Error handling: shows toast on download URL failure.
    * Standards Check: SRP OK | DRY OK | Tests Pending.
@@ -171,7 +171,7 @@ export class BodyMeasurementFilesComponent implements OnInit, OnDestroy {
       )
       .subscribe(res => {
         if (res?.downloadUrl) {
-          window.open(res.downloadUrl, '_blank', 'noopener,noreferrer');
+          window.location.href = res.downloadUrl;
         }
       });
   }
