@@ -118,3 +118,4 @@ Comandos ejecutados sobre este repo el **11 de febrero de 2026**:
 - `proxy.conf.json` existe pero esta vacio (`{}`).
 - `src/app/app.component.html` contiene markup legado que no se usa (el componente raiz usa template inline).
 - Hay un `TODO` pendiente en `ClientDataService` para tipar `WorkoutSession.items`.
+
