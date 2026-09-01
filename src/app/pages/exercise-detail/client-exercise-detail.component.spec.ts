@@ -90,9 +90,37 @@ describe('ClientExerciseDetailComponent', () => {
     fixture.detectChanges();
 
     expect(component).toBeTruthy();
+    expect(component.isWeightLogFormOpen).toBeFalse();
     expect(exerciseWeightLogServiceStub.getLogs).toHaveBeenCalledWith('plan-1', 'ex-1');
     expect(component.weightLogs.length).toBe(1);
     expect(component.weightLogCount).toBe(1);
+  });
+
+  it('renders the weight log form closed initially with history and register action visible', () => {
+    const fixture = TestBed.createComponent(ClientExerciseDetailComponent);
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+
+    expect(nativeElement.querySelector('#weight-log-form')).toBeNull();
+    expect(nativeElement.querySelector('.weight-log-open')?.textContent?.trim()).toBe('+ Registrar carga');
+    expect(nativeElement.querySelectorAll('.weight-log-item').length).toBe(1);
+  });
+
+  it('opens the weight log form inline when tapping Registrar carga and keeps history visible', () => {
+    const fixture = TestBed.createComponent(ClientExerciseDetailComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    const openButton = nativeElement.querySelector<HTMLButtonElement>('.weight-log-open');
+
+    openButton?.click();
+    fixture.detectChanges();
+
+    expect(component.isWeightLogFormOpen).toBeTrue();
+    expect(nativeElement.querySelector('#weight-log-form')).not.toBeNull();
+    expect(nativeElement.querySelectorAll('.weight-log-item').length).toBe(1);
   });
 
   it('formats dates as DD/MM/YYYY without timezone shift from ISO and YYYY-MM-DD', () => {
@@ -150,6 +178,7 @@ describe('ClientExerciseDetailComponent', () => {
 
     component.startEditWeightLog(sampleLog);
 
+    expect(component.isWeightLogFormOpen).toBeTrue();
     expect(component.editingWeightLog).toBe(sampleLog);
     expect(component.weightAmount).toBe(27.5);
     expect(component.weightUnit).toBe('kg');
@@ -174,10 +203,34 @@ describe('ClientExerciseDetailComponent', () => {
 
     component.cancelEditWeightLog();
 
+    expect(component.isWeightLogFormOpen).toBeFalse();
     expect(component.editingWeightLog).toBeNull();
     expect(component.weightAmount).toBeNull();
     expect(component.weightUnit).toBe('kg');
     expect(component.weightNote).toBe('');
+  });
+
+  it('cancelWeightLogForm closes create mode, clears fields and does not call backend mutations', () => {
+    const fixture = TestBed.createComponent(ClientExerciseDetailComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    component.openWeightLogForm();
+    component.weightAmount = 100;
+    component.weightUnit = 'lb';
+    component.recordedAt = '2026-09-01';
+    component.weightNote = 'No guardar';
+
+    component.cancelWeightLogForm();
+
+    expect(component.isWeightLogFormOpen).toBeFalse();
+    expect(component.editingWeightLog).toBeNull();
+    expect(component.weightAmount).toBeNull();
+    expect(component.weightUnit).toBe('kg');
+    expect(component.weightNote).toBe('');
+    expect(exerciseWeightLogServiceStub.createLog).not.toHaveBeenCalled();
+    expect(exerciseWeightLogServiceStub.updateLog).not.toHaveBeenCalled();
+    expect(exerciseWeightLogServiceStub.deleteLog).not.toHaveBeenCalled();
   });
 
   it('saveWeightLog in edit mode calls updateLog with originalPerformedAt and reloads logs', () => {
@@ -213,10 +266,12 @@ describe('ClientExerciseDetailComponent', () => {
     } as UpdateExerciseWeightLogRequest);
 
     expect(component.editingWeightLog).toBeNull();
+    expect(component.isWeightLogFormOpen).toBeFalse();
+    expect(component.weightAmount).toBeNull();
     expect(exerciseWeightLogServiceStub.getLogs).toHaveBeenCalledTimes(2);
   });
 
-  it('updates unit correctly when changing unit during edit and sends updated unit in PUT', () => {
+  it('updates only weightUnit when changing unit during edit and sends updated unit in PUT', () => {
     const fixture = TestBed.createComponent(ClientExerciseDetailComponent);
     const component = fixture.componentInstance;
     fixture.detectChanges();
@@ -237,7 +292,11 @@ describe('ClientExerciseDetailComponent', () => {
     // Usuario cambia unidad a lb
     component.onWeightUnitChange('lb');
     expect(component.weightUnit).toBe('lb');
-    expect(component.weightAmount).toBe(220.5);
+    expect(component.weightAmount).toBe(100);
+
+    component.onWeightUnitChange('lb');
+    expect(component.weightUnit).toBe('lb');
+    expect(component.weightAmount).toBe(100);
 
     component.saveWeightLog();
 
@@ -246,7 +305,7 @@ describe('ClientExerciseDetailComponent', () => {
       exerciseId: 'ex-1',
       logId: 'log-1',
       originalPerformedAt: '2026-08-31T00:00:00.000Z',
-      weight: 220.5,
+      weight: 100,
       unit: 'lb',
       performedAt: '2026-08-31',
       note: 'Nota inicial'
@@ -273,6 +332,42 @@ describe('ClientExerciseDetailComponent', () => {
       performedAt: '2026-09-01',
       note: 'Buena serie'
     } as CreateExerciseWeightLogRequest);
+    expect(component.isWeightLogFormOpen).toBeFalse();
+    expect(component.weightAmount).toBeNull();
+  });
+
+  it('keeps kg and lb as a single native radio selection in the rendered form', () => {
+    const fixture = TestBed.createComponent(ClientExerciseDetailComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    component.openWeightLogForm();
+    component.weightAmount = 100;
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    const kgInput = nativeElement.querySelector<HTMLInputElement>('input[name="weightUnit"][value="kg"]');
+    const lbInput = nativeElement.querySelector<HTMLInputElement>('input[name="weightUnit"][value="lb"]');
+
+    expect(kgInput?.type).toBe('radio');
+    expect(lbInput?.type).toBe('radio');
+    expect(kgInput?.checked).toBeTrue();
+    expect(lbInput?.checked).toBeFalse();
+
+    lbInput?.click();
+    fixture.detectChanges();
+
+    expect(component.weightUnit).toBe('lb');
+    expect(component.weightAmount).toBe(100);
+    expect(kgInput?.checked).toBeFalse();
+    expect(lbInput?.checked).toBeTrue();
+
+    lbInput?.click();
+    fixture.detectChanges();
+
+    expect(component.weightUnit).toBe('lb');
+    expect(component.weightAmount).toBe(100);
+    expect(lbInput?.checked).toBeTrue();
   });
 
   it('promptDeleteWeightLog and confirmDeleteWeightLog call deleteLog with query params and reload logs', () => {

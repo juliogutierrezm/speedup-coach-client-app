@@ -114,15 +114,31 @@
       <div class="weight-log-header">
         <div>
           <p class="weight-log-eyebrow">Seguimiento personal</p>
-          <h2 id="weight-log-title">Peso movido</h2>
+          <h2 id="weight-log-title">Registro de carga</h2>
         </div>
         <span class="weight-log-count">{{ weightLogCount }} registros</span>
       </div>
 
-      <form class="weight-log-form" (ngSubmit)="saveWeightLog()">
+      <button
+        class="weight-log-open"
+        type="button"
+        *ngIf="!isWeightLogFormOpen"
+        (click)="openWeightLogForm()"
+        [disabled]="isSavingWeightLog"
+        aria-controls="weight-log-form"
+        [attr.aria-expanded]="isWeightLogFormOpen">
+        + Registrar carga
+      </button>
+
+      <form
+        id="weight-log-form"
+        class="weight-log-form"
+        *ngIf="isWeightLogFormOpen"
+        (ngSubmit)="saveWeightLog()"
+        [attr.aria-busy]="isSavingWeightLog">
         <div class="weight-log-fields">
           <label class="weight-log-field" for="exercise-weight">
-            <span>Peso movido</span>
+            <span>Carga utilizada</span>
             <input
               id="exercise-weight"
               name="weightAmount"
@@ -136,7 +152,10 @@
               required />
           </label>
 
-          <fieldset class="weight-unit-picker" [disabled]="isSavingWeightLog">
+          <fieldset
+            class="weight-unit-picker"
+            [disabled]="isSavingWeightLog"
+            aria-label="Seleccionar unidad de carga">
             <legend>Unidad</legend>
             <label>
               <input
@@ -190,13 +209,12 @@
           <button
             class="weight-log-cancel"
             type="button"
-            *ngIf="editingWeightLog"
-            (click)="cancelEditWeightLog()"
+            (click)="cancelWeightLogForm()"
             [disabled]="isSavingWeightLog">
-            Cancelar edición
+            Cancelar
           </button>
           <button class="weight-log-submit" type="submit" [disabled]="isSavingWeightLog">
-            {{ isSavingWeightLog ? 'Guardando...' : (editingWeightLog ? 'Guardar cambios' : 'Guardar peso') }}
+            {{ isSavingWeightLog ? 'Guardando...' : (editingWeightLog ? 'Guardar cambios' : 'Registrar carga') }}
           </button>
         </div>
       </form>
@@ -204,21 +222,21 @@
       <div class="weight-log-history" aria-live="polite">
         <p class="weight-log-loading" *ngIf="isWeightLogLoading">Cargando historial...</p>
         <p class="weight-log-empty" *ngIf="!isWeightLogLoading && !weightLogs.length">
-          Aún no has registrado peso para este ejercicio.
+          Aún no has registrado carga para este ejercicio.
         </p>
 
         <article class="weight-log-item" *ngFor="let log of weightLogs; trackBy: trackByWeightLog">
           <div class="weight-log-item-main">
-            <div>
-              <strong>{{ formatWeightLog(log) }}</strong>
-              <p>{{ formatWeightLogDate(log.performedAt) }}</p>
+            <div class="weight-log-copy">
+              <strong class="weight-log-value">{{ formatWeightLog(log) }}</strong>
+              <p class="weight-log-date">{{ formatWeightLogDate(log.performedAt) }}</p>
             </div>
             <div class="weight-log-actions">
               <button
                 class="log-action-btn edit"
                 type="button"
                 (click)="startEditWeightLog(log)"
-                aria-label="Editar registro de peso"
+                aria-label="Editar registro de carga"
                 [disabled]="isSavingWeightLog || isDeletingWeightLog">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83l3.75 3.75z"/>
@@ -228,7 +246,7 @@
                 class="log-action-btn delete"
                 type="button"
                 (click)="promptDeleteWeightLog(log)"
-                aria-label="Eliminar registro de peso"
+                aria-label="Eliminar registro de carga"
                 [disabled]="isSavingWeightLog || isDeletingWeightLog">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"/>
@@ -250,7 +268,7 @@
       aria-labelledby="confirm-delete-title">
       <div class="delete-modal-card">
         <h3 id="confirm-delete-title" class="delete-modal-title">Eliminar registro</h3>
-        <p class="delete-modal-message">¿Deseas eliminar este registro de peso?</p>
+        <p class="delete-modal-message">¿Deseas eliminar este registro de carga?</p>
         <div class="delete-modal-actions">
           <button
             class="delete-modal-btn cancel"

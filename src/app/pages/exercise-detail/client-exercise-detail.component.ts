@@ -58,6 +58,7 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
   errorMessage = '';
   weightLogs: ExerciseWeightLog[] = [];
   weightLogCount = 0;
+  isWeightLogFormOpen = false;
   editingWeightLog: ExerciseWeightLog | null = null;
   logPendingDelete: ExerciseWeightLog | null = null;
   isDeletingWeightLog = false;
@@ -233,6 +234,20 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  /**
+   * Purpose: open the weight log form in create mode.
+   * Input: none. Output: void.
+   * Error handling: clears stale inline feedback before user input.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  openWeightLogForm(): void {
+    this.resetWeightLogFormState();
+    this.isWeightLogFormOpen = true;
+    this.weightLogError = '';
+    this.weightLogSuccess = '';
+    this.cdr.markForCheck();
+  }
+
   saveWeightLog(): void {
     const rawExerciseId = this.exercise?.id || (this.exercise as any)?.exerciseId;
     if (!this.planId || !rawExerciseId || !this.exercise) {
@@ -242,7 +257,7 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
     }
 
     if (typeof this.weightAmount !== 'number' || !Number.isFinite(this.weightAmount) || this.weightAmount <= 0) {
-      this.weightLogError = `Ingresa un peso valido entre 0,1 y ${this.maximumWeightForUnit} ${this.weightUnit}.`;
+      this.weightLogError = `Ingresa una carga valida entre 0,1 y ${this.maximumWeightForUnit} ${this.weightUnit}.`;
       this.weightLogSuccess = '';
       this.cdr.markForCheck();
       return;
@@ -250,7 +265,7 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
 
     const maxAllowed = this.weightUnit === 'kg' ? 2000 : 2000 * POUNDS_PER_KILOGRAM;
     if (this.weightAmount > maxAllowed) {
-      this.weightLogError = `Ingresa un peso valido entre 0,1 y ${this.maximumWeightForUnit} ${this.weightUnit}.`;
+      this.weightLogError = `Ingresa una carga valida entre 0,1 y ${this.maximumWeightForUnit} ${this.weightUnit}.`;
       this.weightLogSuccess = '';
       this.cdr.markForCheck();
       return;
@@ -285,7 +300,7 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
         .pipe(
           catchError(error => {
             console.error('[ClientExerciseDetail] weight log update failed', { error });
-            this.weightLogError = 'No se pudo actualizar el peso. Intenta de nuevo.';
+            this.weightLogError = 'No se pudo actualizar la carga. Intenta de nuevo.';
             return EMPTY;
           }),
           finalize(() => {
@@ -295,8 +310,9 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
           takeUntil(this.destroy$)
         )
         .subscribe(() => {
-          this.cancelEditWeightLog();
-          this.weightLogSuccess = 'Peso actualizado.';
+          this.resetWeightLogFormState();
+          this.isWeightLogFormOpen = false;
+          this.weightLogSuccess = 'Carga actualizada.';
           this.loadWeightLogs();
           this.cdr.markForCheck();
         });
@@ -314,7 +330,7 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
       .pipe(
         catchError(error => {
           console.error('[ClientExerciseDetail] weight log save failed', { error });
-          this.weightLogError = 'No se pudo guardar el peso. Intenta de nuevo.';
+          this.weightLogError = 'No se pudo registrar la carga. Intenta de nuevo.';
           return EMPTY;
         }),
         finalize(() => {
@@ -324,15 +340,16 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe(() => {
-        this.weightAmount = null;
-        this.weightNote = '';
-        this.weightLogSuccess = 'Peso guardado.';
+        this.resetWeightLogFormState();
+        this.isWeightLogFormOpen = false;
+        this.weightLogSuccess = 'Carga registrada.';
         this.loadWeightLogs();
         this.cdr.markForCheck();
       });
   }
 
   startEditWeightLog(log: ExerciseWeightLog): void {
+    this.isWeightLogFormOpen = true;
     this.editingWeightLog = log;
     this.weightAmount = typeof log.weight === 'number' && Number.isFinite(log.weight)
       ? log.weight
@@ -346,14 +363,35 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
   }
 
   cancelEditWeightLog(): void {
+    this.cancelWeightLogForm();
+  }
+
+  /**
+   * Purpose: close the weight log form without persisting changes.
+   * Input: none. Output: void.
+   * Error handling: clears transient validation and success messages.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  cancelWeightLogForm(): void {
+    this.resetWeightLogFormState();
+    this.isWeightLogFormOpen = false;
+    this.weightLogError = '';
+    this.weightLogSuccess = '';
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Purpose: restore the editable weight log fields to create-mode defaults.
+   * Input: none. Output: void.
+   * Error handling: N/A.
+   * Standards Check: SRP OK | DRY OK | Tests Pending.
+   */
+  private resetWeightLogFormState(): void {
     this.editingWeightLog = null;
     this.weightAmount = null;
     this.weightUnit = 'kg';
     this.recordedAt = this.getTodayDate();
     this.weightNote = '';
-    this.weightLogError = '';
-    this.weightLogSuccess = '';
-    this.cdr.markForCheck();
   }
 
   promptDeleteWeightLog(log: ExerciseWeightLog): void {
@@ -418,13 +456,6 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
   onWeightUnitChange(unit: WeightUnit): void {
     if (unit === this.weightUnit) {
       return;
-    }
-
-    if (typeof this.weightAmount === 'number' && Number.isFinite(this.weightAmount)) {
-      const converted = unit === 'lb'
-        ? this.weightAmount * POUNDS_PER_KILOGRAM
-        : this.weightAmount / POUNDS_PER_KILOGRAM;
-      this.weightAmount = Number(converted.toFixed(1));
     }
 
     this.weightUnit = unit;
@@ -571,7 +602,7 @@ export class ClientExerciseDetailComponent implements OnInit, OnDestroy {
       .pipe(
         catchError(error => {
           console.error('[ClientExerciseDetail] weight logs load failed', { error });
-          this.weightLogError = 'No se pudo cargar el historial de pesos.';
+          this.weightLogError = 'No se pudo cargar el historial de cargas.';
           return of({ count: 0, items: [] as ExerciseWeightLog[] });
         }),
         finalize(() => {
